@@ -47,11 +47,16 @@ claude-plugins/
 │   ├── codex-review/
 │   │   ├── SKILL.md
 │   │   └── bin/
+│   ├── create-pr/
+│   │   └── SKILL.md
 │   ├── create-skill/
 │   │   └── SKILL.md
 │   ├── export-session/
 │   │   ├── SKILL.md
 │   │   └── scripts/
+│   ├── get-pr-info/
+│   │   ├── SKILL.md
+│   │   └── bin/
 │   ├── opus-review/
 │   │   ├── SKILL.md
 │   │   └── bin/
@@ -68,8 +73,10 @@ claude-plugins/
 | スキル名 | 説明 |
 |---------|------|
 | `codex-review` | OpenAI Codex CLI をバックエンドとして使ってコードレビューを実施する。新規・継続レビューに対応 |
+| `create-pr` | 現在のブランチからGitHubプルリクエストを作成する。デフォルトテンプレートまたは指定テンプレートに従いPR本文を自動生成する |
 | `create-skill` | 対話的に Claude Code のカスタムスキル（SKILL.md）を新規作成する |
 | `export-session` | Claude Code のセッション会話全文を Markdown ファイルにエクスポートする |
+| `get-pr-info` | GitHub PR の情報（概要・会話・レビュー・行コメント・コミット・差分）を取得して Markdown にまとめる |
 | `opus-review` | Claude CLI（claude -p）を使い Opus モデルでコードレビューを実施する。新規・継続レビューに対応 |
 | `puml` | PlantUML のエンコード/デコードおよび Markdown 内のコードブロックと Kroki URL の相互変換を行う |
 
@@ -87,7 +94,8 @@ claude-plugins/
 
 | コマンド | 用途 | 対象スキル・フック |
 |---------|------|-----------------|
-| `jq` | JSON 解析 | `codex-review`, `opus-review`, `session-start` フック |
+| `jq` | JSON 解析 | `codex-review`, `opus-review`, `get-pr-info`, `session-start` フック |
+| `gh` | GitHub API・PR操作 | `get-pr-info`, `create-pr` |
 | `curl` | PlantUML サーバーへのリクエスト | `puml` |
 | `python3` | エンコード/デコード処理・セッションエクスポート | `puml`, `export-session` |
 | `codex` | OpenAI Codex CLI | `codex-review` |
