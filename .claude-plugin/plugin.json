@@ -1,0 +1,12 @@
+{
+  "name": "my-plugin",
+  "version": "0.1.0",
+  "description": "プラグインの説明",
+  "author": {
+    "name": "Your Name"
+  },
+  "license": "MIT",
+  "keywords": [],
+  "skills": "./skills/",
+  "hooks": "./hooks.json"
+}
