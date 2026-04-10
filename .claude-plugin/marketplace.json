@@ -1,24 +1,20 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "my-marketplace",
-  "version": "0.1.0",
-  "description": "マーケットプレイスの説明",
+  "name": "strange-plugins",
+  "description": "個人的によく使う Claude Code スキル・フック",
   "owner": {
-    "name": "Your Name",
-    "email": "your@email.com"
+    "name": "strange-insect"
   },
-  "repository": "https://github.com/your-name/claude-general-plugins",
-  "license": "MIT",
   "plugins": [
     {
-      "name": "my-plugin",
-      "description": "プラグインの説明",
+      "name": "usual-plugin",
+      "version": "0.1.0",
+      "description": "よく使う普通のスキルとフックをまとめたプラグイン",
       "category": "productivity",
       "author": {
-        "name": "Your Name"
+        "name": "strange-insect"
       },
-      "source": "./",
-      "tags": []
+      "source": "./"
     }
   ]
 }

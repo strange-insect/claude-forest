@@ -1,0 +1,149 @@
+---
+name: codex-review
+description: OpenAI Codex CLI をバックエンドとして使ってコードレビューを実施する。新規レビューと session_id を使った継続レビューに対応。コードの修正は行わない。ユーザーが「codexでレビュー」「codexレビュー」「codex-review」と言った場合に使用。
+argument-hint: "[scope] [観点] [session_id=UUID] [context=背景・設計書・修正意図・注意点]"
+allowed-tools: Bash
+context: fork
+agent: general-purpose
+---
+
+# タスク: Codex コードレビューの実行と要約の返却
+
+以下の手順を **この forked コンテキスト内で完結** させる。
+Codex の生出力・中間ログは親会話に展開しない。親会話へ返すのは最後の「返却フォーマット」のみ。
+
+> **重要: フラットな視点でのレビュー**
+> `$ARGUMENTS` やプロンプトに与えられていない情報については、フラットな視点でのレビューが期待されている。
+> 不明点を事前にユーザーへ質問せず、そのままレビューを実行すること。
+> 不明点や確認事項がある場合は、返却フォーマット（手順 6）に質問セクションを追記して返す。
+
+---
+
+## 1. ユーザー指示の解釈
+
+`$ARGUMENTS` から以下を **必ず全て** 読み取り、該当するフラグに渡す。
+判断に迷った場合は「渡さない」ではなく「渡す」側に倒すこと。
+
+**session_id の有無**
+- `session_id=<UUID>` や `セッション <UUID>` が含まれる → **継続レビュー**（手順 3b へ）
+- なし → **新規レビュー**（手順 2 へ）
+
+**レビュー範囲**（新規のみ）
+- 指定なし → ワーキングセット（手順 2 で確認）
+- ファイル・ディレクトリ名 → `--targets` に渡す
+- `base=<branch>` / `PR差分` / `ブランチ差分` → `--mode new-base --base <branch>`
+
+**レビュー観点** → `--aspects`
+- 「〜の観点で」「〜観点」「〜についてレビュー」「〜を確認」等のフレーズがあれば、それをそのまま `--aspects` に渡す
+- 指定なし → デフォルト観点（correctness / security / edge cases / test gaps / maintainability）
+
+**背景・設計書・修正意図・注意点** → `--review-context`
+- 修正した理由・経緯、参照すべき設計書やドキュメント、レビュー時に考慮してほしい制約や意図など
+- `$ARGUMENTS` に含まれていれば `--review-context "..."` に渡す
+- 親セッションが明示的に渡した場合は必ず Codex に伝える
+
+### 解釈の具体例
+
+| `$ARGUMENTS` | `--aspects` | `--review-context` | `--targets` |
+|---|---|---|---|
+| `ドキュメント反映の観点でレビューしてください` | `ドキュメント反映の観点` | (なし) | (なし) |
+| `セキュリティとパフォーマンスの観点で src/app/ をレビュー` | `セキュリティとパフォーマンス` | (なし) | `src/app/` |
+| `背景コンテキストを与えずフラットな視点でレビューさせて` | `フラットな視点（背景コンテキストなし）` | (なし) | (なし) |
+| `仕様書との整合性を確認してください context=reward-spec.md を参照` | `仕様書との整合性` | `reward-spec.md を参照` | (なし) |
+| `テストカバレッジの観点で src/domain/ を確認` | `テストカバレッジ` | (なし) | `src/domain/` |
+
+---
+
+## 2. レビュー対象の確定（新規レビューのみ）
+
+```bash
+${CLAUDE_SKILL_DIR}/bin/get-working-set.sh
+```
+
+- **スコープ指定あり**（`--targets` やファイル・ディレクトリ名） → そのまま手順 3a へ
+- **スコープ指定なし + 出力あり** → `--mode new-uncommitted` を使う
+- **スコープ指定なし + 出力なし** → レビュー対象がないため「レビュー対象がありません。レビュー範囲を指定してください（ファイル名、ディレクトリ名、`base=<branch>` など）」と返して終了
+
+---
+
+## 3a. 新規レビューの実行
+
+```bash
+${CLAUDE_SKILL_DIR}/bin/run-codex-review.sh \
+  --mode <new-uncommitted | new-base> \
+  [--base <branch>] \
+  [--targets "<file1>" --targets "<file2>"] \
+  [--aspects "<観点テキスト>"] \
+  [--review-context "<背景・設計書・修正意図・注意点>"]
+```
+
+スクリプトは内部で以下を行う:
+1. `--aspects` / `--targets` / `--review-context` があればプロンプトを組み立てる
+2. `codex exec review` を実行する
+   - **`--mode new-uncommitted`**: codex CLI の仕様上、`codex exec review --uncommitted` にカスタムプロンプトを渡せないため、`--aspects` / `--targets` / `--review-context` は **codex に伝わらない**。codex の built-in レビューロジックのみで実行される
+   - **`--mode new-base`**: 同様にカスタムプロンプトは codex に伝わらない
+   - **`--mode resume`**: プロンプトを stdin 経由で渡すため、`--continuation` / `--review-context` は **codex に伝わる**
+3. JSONL 出力から `session_id` を、`-o` ファイルからレビュー本文を抽出
+
+出力を変数に受け取る（親会話には出力しない）。
+
+---
+
+## 3b. 継続レビューの実行
+
+```bash
+${CLAUDE_SKILL_DIR}/bin/run-codex-review.sh \
+  --mode resume \
+  --session-id "<SESSION_ID>" \
+  [--continuation "<ユーザーの追加指示>"] \
+  [--review-context "<背景・設計書・修正意図・注意点>"]
+```
+
+出力を変数に受け取る（親会話には出力しない）。
+
+---
+
+## 4. 出力の解析
+
+スクリプトの stdout 出力形式:
+```
+CODEX_SESSION_ID=<UUID or unresolved>
+---CODEX_REVIEW_OUTPUT---
+<レビュー本文（Codex の応答）>
+```
+
+スクリプトの stderr にはレビューログの保存先が出力される:
+```
+CODEX_REVIEW_LOG=<保存ファイルパス>
+```
+
+この出力から:
+1. `CODEX_SESSION_ID=` 行で session_id を取得（`unresolved` の場合は推測しない）
+2. stderr の `CODEX_REVIEW_LOG=` 行でログファイルのパスを取得する
+
+stdout のレビュー本文は親会話に展開しない。ログファイルに全て記録されている。
+
+---
+
+## 5. レビュー結果の日本語化
+
+ログファイルの「Codex レビュー結果」セクションを確認し、英語で記載されている場合は日本語に翻訳してログファイルを上書き保存する。
+既に日本語で記載されている場合はこのステップをスキップする。
+
+---
+
+## 6. 親会話への返却フォーマット
+
+親会話にはログファイルのパスのみを返す。
+
+```
+レビューログ: <保存ファイルパス>
+```
+
+---
+
+## 制約
+
+- `~/.codex/auth.json` などの内容を表示しない
+- session_id を推測で補わない
+- コードの修正は行わない（読み取り専用レビュー）

@@ -1,0 +1,5 @@
+# ローカル設定
+.claude/
+
+# Python
+__pycache__/

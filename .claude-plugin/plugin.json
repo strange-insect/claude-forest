@@ -1,12 +1,10 @@
 {
-  "name": "my-plugin",
+  "name": "usual-plugin",
   "version": "0.1.0",
-  "description": "プラグインの説明",
+  "description": "よく使う普通のスキルとフックをまとめたプラグイン",
   "author": {
-    "name": "Your Name"
+    "name": "strange-insect"
   },
-  "license": "MIT",
-  "keywords": [],
   "skills": "./skills/",
-  "hooks": "./hooks.json"
+  "hooks": "./hooks/hooks.json"
 }
