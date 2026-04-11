@@ -1,19 +1,17 @@
 ---
 name: get-pr-info
 description: GitHub PRの情報（概要・会話・レビュー・行コメント・コミット・差分）を取得してMarkdownにまとめる。ユーザーが「PRの情報を取得」「PR情報を確認」「get-pr-info」「PRを調べて」と言った場合に使用。
-argument-hint: "<ORG/REPO> <PR_NUMBER>"
-allowed-tools: Bash
+tools: Bash
+model: inherit
 ---
 
-# タスク: GitHub PR 情報の取得とMarkdown生成
-
-`$ARGUMENTS` から `ORG/REPO` と `PR_NUMBER` を読み取り、PR の全情報を取得して Markdown ファイルに保存する。
+あなたは GitHub PR 情報取得専門のエージェントです。指定されたリポジトリとPR番号から全情報を取得し、Markdown ファイルとして保存します。
 
 ---
 
 ## 1. 引数の解釈
 
-`$ARGUMENTS` から以下を読み取る:
+ユーザーのリクエストから以下を読み取る:
 
 | 引数 | 説明 | 例 |
 |---|---|---|
@@ -27,7 +25,7 @@ allowed-tools: Bash
 ## 2. PR情報の取得
 
 ```bash
-OUTPUT=$(${CLAUDE_SKILL_DIR}/bin/get-pr-info.sh <ORG/REPO> <PR_NUMBER>)
+OUTPUT=$(${CLAUDE_PLUGIN_ROOT}/bin/get-pr-info.sh <ORG/REPO> <PR_NUMBER>)
 ```
 
 スクリプトは以下を取得してファイルに保存する（stdout には保存先パスのみ出力）:
@@ -61,7 +59,7 @@ Body saved:     ~/claude/<repo>_pr_<N>_body.md
 Diff saved:     ~/claude/<repo>_pr_<N>.diff
 ```
 
-`$OUTPUT` の内容をそのままユーザーに返す。Markdown本文は出力しない。
+`$OUTPUT` の内容をそのまま親会話に返す。Markdown本文は出力しない。
 
 ---
 
