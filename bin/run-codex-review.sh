@@ -82,6 +82,22 @@ build_review_prompt() {
 - ファイルパスと行番号を明記すること
 - 修正案がある場合は具体的なコード例を含めること（実際の修正はしない）")
 
+  if [[ -z "$ASPECTS" ]]; then
+    parts+=("【レビュー観点（デフォルト）】
+変更差分だけでなく、変更箇所の周辺コードも読み、以下を幅広く・深くレビューすること:
+
+1. **正確性・ロジック**: バグ、エッジケース、境界値、競合状態
+2. **セキュリティ**: インジェクション、認証・認可漏れ、機密情報の露出
+3. **ドキュメント整合性**: README・コメント・JSDoc/docstring・CHANGELOG 等の更新漏れ、変更後の実装と一致しない記述
+4. **周辺コードとの整合性**: 変更していない関数・クラス・設定・テストが変更後の実装と矛盾していないか
+5. **類似機能との整合性**: コードベース内の類似した実装・命名規則・エラーハンドリング・ログ出力等のパターンと乖離していないか
+6. **ワークフロー・連携影響**: 変更した機能が担う上流・下流の処理フロー、呼び出し元・呼び出し先、イベント・キュー・ジョブ等との接続部分に影響が出ていないか
+7. **データライフサイクル**: 変更がデータ構造や内容に影響する場合、そのデータを扱うライフサイクル上の他の部分（生成・変換・永続化・読み取り・表示・削除・有効期限管理）と不整合を起こしていないか。直接の呼び出し関係がなくても同じデータを参照・更新する機能（例: バッチ処理でステータスが変わった場合の画面表示やレポート出力、非同期ジョブの結果を参照するAPIやUI、帳票・CSV出力など）まで広く確認すること
+8. **テスト網羅性**: 追加・変更したロジックに対応するテストが存在するか、既存テストが陳腐化していないか
+9. **保守性**: 命名、重複、抽象化の適切さ、将来の変更への影響
+10. **パフォーマンス**: 不要な計算・I/O・メモリ使用")
+  fi
+
   if [[ "$MODE" == "new-uncommitted" ]]; then
     parts+=("ワーキングツリーの未コミット変更（staged + unstaged + untracked）をレビューしてください。
 git diff や git diff --cached、git ls-files --others --exclude-standard を使って差分を確認してください。")
@@ -130,26 +146,11 @@ ${ASPECTS}")
 build_resume_prompt() {
   local continuation_text="${CONTINUATION:-前回の指摘が解消されているか確認してください。}"
 
-  local context_section=""
   if [[ -n "$REVIEW_CONTEXT" ]]; then
-    context_section="
-【背景・修正意図・注意点】
-${REVIEW_CONTEXT}
-"
+    printf '【背景・修正意図・注意点】\n%s\n\n' "$REVIEW_CONTEXT"
   fi
 
-  cat <<EOF
-前回レビューの続きです。
-${context_section}
-【今回の指示】
-${continuation_text}
-
-【確認してほしいこと】
-- 前回指摘した問題が解消されているか
-- 未解消の指摘（変更なし・対応不十分なもの）
-- 新たに見つかった問題
-- 今回確認した範囲
-EOF
+  printf '%s\n' "$continuation_text"
 }
 
 # --- Codex 実行 ---
@@ -161,11 +162,10 @@ CODEX_CMD_BASE=""
 case "$MODE" in
   new-uncommitted)
     PROMPT=$(build_review_prompt)
-    CODEX_CMD_BASE="codex exec review \\
-  --uncommitted \\
+    CODEX_CMD_BASE="codex exec \\
   --full-auto \\
   --json"
-    codex exec review --uncommitted --full-auto --json -o "$TMP_MSG" \
+    echo "$PROMPT" | codex exec --full-auto --json -o "$TMP_MSG" - \
       >"$TMP_JSONL" 2>"$TMP_STDERR" || EXIT_CODE=$?
 
     EXTRACTED_SESSION_ID=$(extract_session_id "$TMP_JSONL")
@@ -173,11 +173,10 @@ case "$MODE" in
 
   new-base)
     PROMPT=$(build_review_prompt)
-    CODEX_CMD_BASE="codex exec review \\
-  --base \"${BASE_BRANCH}\" \\
+    CODEX_CMD_BASE="codex exec \\
   --full-auto \\
   --json"
-    codex exec review --base "$BASE_BRANCH" --full-auto --json -o "$TMP_MSG" \
+    echo "$PROMPT" | codex exec --full-auto --json -o "$TMP_MSG" - \
       >"$TMP_JSONL" 2>"$TMP_STDERR" || EXIT_CODE=$?
 
     EXTRACTED_SESSION_ID=$(extract_session_id "$TMP_JSONL")
