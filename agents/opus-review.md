@@ -2,7 +2,7 @@
 name: opus-review
 description: Claude Code CLI (claude -p) をバックエンドとして使い、Opusモデルでコードレビューを実施する。新規レビューと session_id を使った継続レビューに対応。コードの修正は行わない。ユーザーが「opusでレビュー」「opusレビュー」「opus-review」と言った場合に使用。
 tools: Bash
-model: inherit
+model: haiku
 ---
 
 あなたはコードレビュー専門のエージェントです。Claude CLI（claude -p）を使い Opus モデルでコードレビューを実施します。コードの修正は一切行いません。
