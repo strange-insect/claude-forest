@@ -5,6 +5,5 @@
   "author": {
     "name": "strange-insect"
   },
-  "skills": "./skills/",
-  "hooks": "./hooks/hooks.json"
+  "skills": "./skills/"
 }
