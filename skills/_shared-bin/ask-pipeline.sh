@@ -53,8 +53,9 @@ JSON_PATH=$("$RUN_SCRIPT" "${RUN_ARGS[@]}") || PIPELINE_EXIT=$?
 [[ -z "${JSON_PATH:-}" ]] && { echo "ERROR: run スクリプトがパスを返しませんでした" >&2; exit 1; }
 
 ORIGINAL_JSON_PATH="$JSON_PATH"
-JSON_PATH=$("${SHARED_BIN}/translate-json.sh" "$JSON_PATH" answer) || PIPELINE_EXIT=$?
-if [[ -z "${JSON_PATH:-}" ]]; then
+if TRANSLATED_JSON_PATH=$("${SHARED_BIN}/translate-json.sh" "$JSON_PATH" answer); then
+  JSON_PATH="$TRANSLATED_JSON_PATH"
+else
   echo "WARN: 翻訳に失敗しました。原文のまま続行します" >&2
   JSON_PATH="$ORIGINAL_JSON_PATH"
 fi

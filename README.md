@@ -51,35 +51,35 @@ claude-plugins/
 │   ├── plugin.json        # プラグインマニフェスト
 │   └── marketplace.json   # マーケットプレイスカタログ
 ├── agents/                # サブエージェント定義
-│   ├── codex-review.md
 │   ├── export-session.md
-│   ├── get-pr-info.md
-│   └── opus-review.md
+│   └── get-pr-info.md
 ├── skills/                # スキル（/usual-plugin:<name> で呼び出せる）
 │   ├── _shared-bin/       # スキル間で共有するスクリプト
 │   │   ├── ask-pipeline.sh
+│   │   ├── get-working-set.sh
 │   │   ├── save-ask-log.sh
 │   │   └── translate-json.sh
 │   ├── codex-ask/
-│   │   ├── bin/
-│   │   │   └── run-codex-ask.sh
+│   │   ├── bin/run-codex-ask.sh
+│   │   └── SKILL.md
+│   ├── codex-review/
+│   │   ├── bin/run-codex-review.sh
 │   │   └── SKILL.md
 │   ├── create-pr/
 │   │   └── SKILL.md
 │   ├── create-skill/
 │   │   └── SKILL.md
 │   ├── opus-ask/
-│   │   ├── bin/
-│   │   │   └── run-opus-ask.sh
+│   │   ├── bin/run-opus-ask.sh
+│   │   └── SKILL.md
+│   ├── opus-review/
+│   │   ├── bin/run-opus-review.sh
 │   │   └── SKILL.md
 │   └── puml/
 │       ├── bin/
 │       └── SKILL.md
 ├── bin/                   # 実行スクリプト（エージェントから参照）
-│   ├── get-pr-info.sh
-│   ├── get-working-set.sh
-│   ├── run-codex-review.sh
-│   └── run-opus-review.sh
+│   └── get-pr-info.sh
 ├── scripts/               # ユーティリティスクリプト
 │   └── export_session.py
 └── hooks/                 # フック設定・スクリプト
@@ -93,10 +93,8 @@ Claude が自動的に委譲するサブエージェント。`usual-plugin:<name
 
 | エージェント名 | 説明 |
 |--------------|------|
-| `codex-review` | OpenAI Codex CLI をバックエンドとして使ってコードレビューを実施する。新規・継続レビューに対応 |
 | `export-session` | Claude Code のセッション会話全文を Markdown ファイルにエクスポートする |
 | `get-pr-info` | GitHub PR の情報（概要・会話・レビュー・行コメント・コミット・差分）を取得して Markdown にまとめる |
-| `opus-review` | Claude CLI（claude -p）を使い Opus モデルでコードレビューを実施する。新規・継続レビューに対応 |
 
 ## スキル一覧
 
@@ -105,9 +103,11 @@ Claude が自動的に委譲するサブエージェント。`usual-plugin:<name
 | スキル名 | 説明 |
 |---------|------|
 | `codex-ask` | OpenAI Codex CLI をバックエンドとして使い、1問1答形式で Codex に質問する。会話継続に対応 |
+| `codex-review` | OpenAI Codex CLI をバックエンドとして使ってコードレビューを実施する。新規・継続レビューに対応 |
 | `create-pr` | 現在のブランチからGitHubプルリクエストを作成する。デフォルトテンプレートまたは指定テンプレートに従いPR本文を自動生成する |
 | `create-skill` | 対話的に Claude Code のカスタムスキル（SKILL.md）を新規作成する |
 | `opus-ask` | Claude CLI（claude -p）を使い Opus モデルで 1問1答形式の質問に回答する。会話継続に対応 |
+| `opus-review` | Claude CLI（claude -p）を使い Opus モデルでコードレビューを実施する。新規・継続レビューに対応 |
 | `puml` | PlantUML のエンコード/デコードおよび Markdown 内のコードブロックと Kroki URL の相互変換を行う |
 
 ## フック一覧
@@ -129,7 +129,7 @@ Claude が自動的に委譲するサブエージェント。`usual-plugin:<name
 | `curl` | PlantUML サーバーへのリクエスト | `puml` |
 | `python3` | エンコード/デコード処理・セッションエクスポート | `puml`, `export-session` |
 | `codex` | OpenAI Codex CLI | `codex-ask`, `codex-review` |
-| `claude` | Claude Code CLI（claude -p） | `opus-ask` |
+| `claude` | Claude Code CLI（claude -p） | `codex-ask`, `codex-review`, `opus-ask`, `opus-review` |
 
 ### インストール方法
 
@@ -157,4 +157,4 @@ npm install -g @openai/codex
 
 | 機能 | 内容 |
 |-------------|------|
-| `opus-review` | 内部で `--dangerously-skip-permissions` と無制限の `Bash` を使用しているため、信頼できないリポジトリのレビューにはプロンプトインジェクションのリスクがある。ツールを読み取り専用（`Read,Glob,Grep`）に制限することで対処可能だが、現状は現行の動作を維持している |
+| `opus-review` | 内部で `--dangerously-skip-permissions` と `Bash` を許可しているため、`Write/Edit` を外していても `Bash` 経由の書き込み・任意コマンド実行リスクがある。信頼できないリポジトリのレビューにはプロンプトインジェクションのリスクがある |
