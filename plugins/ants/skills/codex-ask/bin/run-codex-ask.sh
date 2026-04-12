@@ -74,7 +74,9 @@ save_json() {
   local exit_code="$4"
 
   jq -n \
-    --arg type       "codex" \
+    --arg model      "codex" \
+    --arg type       "ask" \
+    --arg mode       "$MODE" \
     --arg session_id "$session_id" \
     --arg timestamp  "$(date '+%Y-%m-%d %H:%M:%S')" \
     --arg directory  "$(pwd)" \
@@ -84,7 +86,9 @@ save_json() {
     --arg status     "$status" \
     --argjson exit_code "$exit_code" \
     '{
+      model:      $model,
       type:       $type,
+      mode:       $mode,
       session_id: $session_id,
       timestamp:  $timestamp,
       directory:  $directory,
@@ -100,6 +104,9 @@ save_json() {
 
 # --- プロンプト構築 ---
 PROMPT=$(printf 'ファイルの読み取りと Web 検索は許可する。ファイルの書き込み・作成は行わないこと。\n\n%s\n' "$MESSAGE")
+
+# --- 新規 / 継続 ---
+MODE=$([[ -n "$SESSION_ID" ]] && echo "continuation" || echo "new")
 
 # --- Codex 実行 ---
 EXIT_CODE=0
@@ -134,7 +141,7 @@ $(cat "$TMP_STDERR")"
 $(cat "$TMP_MSG")"
   fi
 
-  save_json "unresolved" "$ERROR_OUTPUT" "error" "$EXIT_CODE"
+  save_json "${SESSION_ID:-unresolved}" "$ERROR_OUTPUT" "error" "$EXIT_CODE"
   exit 1
 fi
 

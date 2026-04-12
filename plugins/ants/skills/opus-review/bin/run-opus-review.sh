@@ -81,7 +81,9 @@ save_json() {
   local session_id="$1" answer="$2" status="$3" exit_code="$4"
 
   jq -n \
-    --arg  type       "opus" \
+    --arg  model      "opus" \
+    --arg  type       "review" \
+    --arg  mode       "$MODE" \
     --arg  session_id "$session_id" \
     --arg  timestamp  "$(date '+%Y-%m-%d %H:%M:%S')" \
     --arg  directory  "$(pwd)" \
@@ -91,7 +93,9 @@ save_json() {
     --arg  status     "$status" \
     --argjson exit_code "$exit_code" \
     '{
+      model:      $model,
       type:       $type,
+      mode:       $mode,
       session_id: $session_id,
       timestamp:  $timestamp,
       directory:  $directory,
@@ -140,6 +144,9 @@ fi
 # --- Write/Edit を除いた読み取り系ツールのみ許可 ---
 ALLOWED_TOOLS="Read,Glob,Grep,Bash"
 
+# --- 新規 / 継続 ---
+MODE=$([[ -n "$SESSION_ID" ]] && echo "continuation" || echo "new")
+
 # --- Claude 実行 ---
 EXIT_CODE=0
 EXTRACTED_SESSION_ID="unresolved"
@@ -187,7 +194,7 @@ ${ERR_RESULT}"
 stderr:
 $(cat "$TMP_STDERR")"
   fi
-  save_json "unresolved" "$ERROR_OUTPUT" "error" "$EXIT_CODE"
+  save_json "${SESSION_ID:-unresolved}" "$ERROR_OUTPUT" "error" "$EXIT_CODE"
   exit 1
 fi
 
