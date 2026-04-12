@@ -44,9 +44,11 @@ claude-plugins/
 │   ├── plugin.json        # プラグインマニフェスト
 │   └── marketplace.json   # マーケットプレイスカタログ
 ├── agents/                # サブエージェント定義
+│   ├── codex-ask.md
 │   ├── codex-review.md
 │   ├── export-session.md
 │   ├── get-pr-info.md
+│   ├── opus-ask.md
 │   └── opus-review.md
 ├── skills/                # スキル（/usual-plugin:<name> で呼び出せる）
 │   ├── create-pr/
@@ -59,7 +61,9 @@ claude-plugins/
 ├── bin/                   # 実行スクリプト（エージェントから参照）
 │   ├── get-pr-info.sh
 │   ├── get-working-set.sh
+│   ├── run-codex-ask.sh
 │   ├── run-codex-review.sh
+│   ├── run-opus-ask.sh
 │   └── run-opus-review.sh
 ├── scripts/               # ユーティリティスクリプト
 │   └── export_session.py
@@ -74,9 +78,11 @@ Claude が自動的に委譲するサブエージェント。`usual-plugin:<name
 
 | エージェント名 | 説明 |
 |--------------|------|
+| `codex-ask` | OpenAI Codex CLI をバックエンドとして使い、1問1答形式で Codex に質問する。会話継続に対応 |
 | `codex-review` | OpenAI Codex CLI をバックエンドとして使ってコードレビューを実施する。新規・継続レビューに対応 |
 | `export-session` | Claude Code のセッション会話全文を Markdown ファイルにエクスポートする |
 | `get-pr-info` | GitHub PR の情報（概要・会話・レビュー・行コメント・コミット・差分）を取得して Markdown にまとめる |
+| `opus-ask` | Claude CLI（claude -p）を使い Opus モデルで 1問1答形式の質問に回答する。会話継続に対応 |
 | `opus-review` | Claude CLI（claude -p）を使い Opus モデルでコードレビューを実施する。新規・継続レビューに対応 |
 
 ## スキル一覧
