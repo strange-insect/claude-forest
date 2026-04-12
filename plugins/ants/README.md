@@ -8,15 +8,6 @@
 claude plugin install ants@claude-forest
 ```
 
-## エージェント一覧
-
-Claude が自動的に委譲するサブエージェント。
-
-| エージェント名 | 説明 |
-|--------------|------|
-| `export-session` | セッション会話全文を Markdown ファイルにエクスポートする |
-| `get-pr-info` | GitHub PR の情報（概要・会話・レビュー・行コメント・コミット・差分）を取得して Markdown にまとめる |
-
 ## スキル一覧
 
 `/ants:<name>` で呼び出せるスラッシュコマンド。
@@ -27,6 +18,8 @@ Claude が自動的に委譲するサブエージェント。
 | `codex-review` | OpenAI Codex CLI でコードレビュー。新規・継続レビューに対応 |
 | `create-pr` | 現在のブランチから GitHub PR を作成する |
 | `create-skill` | 対話的にカスタムスキル（SKILL.md）を新規作成する |
+| `export-session` | セッション会話全文を Markdown ファイルにエクスポートする |
+| `get-pr-info` | GitHub PR の情報（概要・会話・レビュー・行コメント・コミット・差分）を取得して `/tmp/pull-requests/` に保存する |
 | `opus-ask` | Opus モデルで 1問1答形式の質問。会話継続に対応 |
 | `opus-review` | Opus モデルでコードレビュー。新規・継続レビューに対応 |
 | `puml` | PlantUML のエンコード/デコードおよび Markdown と Kroki URL の相互変換 |
