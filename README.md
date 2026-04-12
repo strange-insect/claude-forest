@@ -13,7 +13,11 @@ claude plugin marketplace add strange-insect/claude-plugins
 ### プラグインをインストール
 
 ```bash
+# インストール実行
 claude plugin install usual-plugin
+
+# インストールされたプラグインを確認
+claude plugin list
 ```
 
 ### ローカルで試す（セッション限定）
@@ -32,6 +36,9 @@ claude plugin marketplace update strange-plugins
 
 # 2. プラグインを更新（更新後は Claude Code の再起動が必要）
 claude plugin update usual-plugin
+
+# 更新されたプラグインを確認
+claude plugin list
 ```
 
 `/plugin` → Marketplaces タブで **auto-update** を有効にすると、起動時に自動更新される。
@@ -44,26 +51,34 @@ claude-plugins/
 │   ├── plugin.json        # プラグインマニフェスト
 │   └── marketplace.json   # マーケットプレイスカタログ
 ├── agents/                # サブエージェント定義
-│   ├── codex-ask.md
 │   ├── codex-review.md
 │   ├── export-session.md
 │   ├── get-pr-info.md
-│   ├── opus-ask.md
 │   └── opus-review.md
 ├── skills/                # スキル（/usual-plugin:<name> で呼び出せる）
+│   ├── _shared-bin/       # スキル間で共有するスクリプト
+│   │   ├── ask-pipeline.sh
+│   │   ├── save-ask-log.sh
+│   │   └── translate-json.sh
+│   ├── codex-ask/
+│   │   ├── bin/
+│   │   │   └── run-codex-ask.sh
+│   │   └── SKILL.md
 │   ├── create-pr/
 │   │   └── SKILL.md
 │   ├── create-skill/
 │   │   └── SKILL.md
+│   ├── opus-ask/
+│   │   ├── bin/
+│   │   │   └── run-opus-ask.sh
+│   │   └── SKILL.md
 │   └── puml/
-│       ├── SKILL.md
-│       └── bin/
+│       ├── bin/
+│       └── SKILL.md
 ├── bin/                   # 実行スクリプト（エージェントから参照）
 │   ├── get-pr-info.sh
 │   ├── get-working-set.sh
-│   ├── run-codex-ask.sh
 │   ├── run-codex-review.sh
-│   ├── run-opus-ask.sh
 │   └── run-opus-review.sh
 ├── scripts/               # ユーティリティスクリプト
 │   └── export_session.py
@@ -78,11 +93,9 @@ Claude が自動的に委譲するサブエージェント。`usual-plugin:<name
 
 | エージェント名 | 説明 |
 |--------------|------|
-| `codex-ask` | OpenAI Codex CLI をバックエンドとして使い、1問1答形式で Codex に質問する。会話継続に対応 |
 | `codex-review` | OpenAI Codex CLI をバックエンドとして使ってコードレビューを実施する。新規・継続レビューに対応 |
 | `export-session` | Claude Code のセッション会話全文を Markdown ファイルにエクスポートする |
 | `get-pr-info` | GitHub PR の情報（概要・会話・レビュー・行コメント・コミット・差分）を取得して Markdown にまとめる |
-| `opus-ask` | Claude CLI（claude -p）を使い Opus モデルで 1問1答形式の質問に回答する。会話継続に対応 |
 | `opus-review` | Claude CLI（claude -p）を使い Opus モデルでコードレビューを実施する。新規・継続レビューに対応 |
 
 ## スキル一覧
@@ -91,8 +104,10 @@ Claude が自動的に委譲するサブエージェント。`usual-plugin:<name
 
 | スキル名 | 説明 |
 |---------|------|
+| `codex-ask` | OpenAI Codex CLI をバックエンドとして使い、1問1答形式で Codex に質問する。会話継続に対応 |
 | `create-pr` | 現在のブランチからGitHubプルリクエストを作成する。デフォルトテンプレートまたは指定テンプレートに従いPR本文を自動生成する |
 | `create-skill` | 対話的に Claude Code のカスタムスキル（SKILL.md）を新規作成する |
+| `opus-ask` | Claude CLI（claude -p）を使い Opus モデルで 1問1答形式の質問に回答する。会話継続に対応 |
 | `puml` | PlantUML のエンコード/デコードおよび Markdown 内のコードブロックと Kroki URL の相互変換を行う |
 
 ## フック一覧
@@ -109,11 +124,12 @@ Claude が自動的に委譲するサブエージェント。`usual-plugin:<name
 
 | コマンド | 用途 | 対象機能 |
 |---------|------|--------------------------------|
-| `jq` | JSON 解析 | `codex-review`, `opus-review`, `get-pr-info`, `session-start` |
+| `jq` | JSON 解析 | `codex-ask`, `codex-review`, `opus-ask`, `opus-review`, `get-pr-info`, `session-start` |
 | `gh` | GitHub API・PR操作 | `get-pr-info`, `create-pr` |
 | `curl` | PlantUML サーバーへのリクエスト | `puml` |
 | `python3` | エンコード/デコード処理・セッションエクスポート | `puml`, `export-session` |
-| `codex` | OpenAI Codex CLI | `codex-review` |
+| `codex` | OpenAI Codex CLI | `codex-ask`, `codex-review` |
+| `claude` | Claude Code CLI（claude -p） | `opus-ask` |
 
 ### インストール方法
 
