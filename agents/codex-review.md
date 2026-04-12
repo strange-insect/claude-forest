@@ -2,7 +2,7 @@
 name: codex-review
 description: OpenAI Codex CLI をバックエンドとして使ってコードレビューを実施する。新規レビューと session_id を使った継続レビューに対応。コードの修正は行わない。ユーザーが「codexでレビュー」「codexレビュー」「codex-review」と言った場合に使用。
 tools: Bash
-model: inherit
+model: haiku
 ---
 
 あなたはコードレビュー専門のエージェントです。OpenAI Codex CLI を使ってコードレビューを実施します。コードの修正は一切行いません。
@@ -30,7 +30,7 @@ model: inherit
 
 **レビュー観点** → `--aspects`
 - 「〜の観点で」「〜観点」「〜についてレビュー」「〜を確認」等のフレーズがあれば、それをそのまま `--aspects` に渡す
-- 指定なし → デフォルト観点（correctness / security / edge cases / test gaps / maintainability）
+- 指定なし → スクリプトのデフォルト観点を使用（正確性・セキュリティ・ドキュメント整合性・周辺コードとの整合性・類似機能との整合性・ワークフロー連携影響・データライフサイクル・テスト網羅性・保守性・パフォーマンス）
 
 **背景・設計書・修正意図・注意点** → `--review-context`
 - 修正した理由・経緯、参照すべき設計書やドキュメント、レビュー時に考慮してほしい制約や意図など
@@ -63,10 +63,9 @@ ${CLAUDE_PLUGIN_ROOT}/bin/run-codex-review.sh \
 
 スクリプトは内部で以下を行う:
 1. `--aspects` / `--targets` / `--review-context` があればプロンプトを組み立てる
-2. `codex exec review` を実行する
-   - **`--mode new-uncommitted`**: codex CLI の仕様上、`codex exec review --uncommitted` にカスタムプロンプトを渡せないため、`--aspects` / `--targets` / `--review-context` は **codex に伝わらない**。codex の built-in レビューロジックのみで実行される
-   - **`--mode new-base`**: 同様にカスタムプロンプトは codex に伝わらない
-   - **`--mode resume`**: プロンプトを stdin 経由で渡すため、`--continuation` / `--review-context` は **codex に伝わる**
+2. `codex exec` を実行する（stdin 経由でプロンプトを渡す）
+   - **`--mode new-uncommitted`**: プロンプトに未コミット変更の確認手順を含め、stdin 経由で渡す
+   - **`--mode new-base`**: プロンプトにベースブランチとの差分確認手順を含め、stdin 経由で渡す
 3. JSONL 出力から `session_id` を、`-o` ファイルからレビュー本文を抽出
 
 出力を変数に受け取る（親会話には出力しない）。
