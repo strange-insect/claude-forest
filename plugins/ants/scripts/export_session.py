@@ -396,7 +396,7 @@ def cmd_list(args: list[str]) -> None:
 
 def cmd_export(session_id: str, args: list[str]) -> None:
     """セッションをMarkdownにエクスポート"""
-    include_thinking = "--thinking" in args or "-t" in args
+    include_thinking = True
     output_path_arg = None
 
     for i, arg in enumerate(args):
@@ -443,14 +443,13 @@ def main():
     if not args or args[0] in ("--help", "-h"):
         print("Usage:")
         print("  export_session.py list [--cwd] [--project PATH] [--limit N]")
-        print("  export_session.py current [--thinking] [--output DIR]")
-        print("  export_session.py <session-id> [--thinking] [--output DIR]")
+        print("  export_session.py current [--output DIR]")
+        print("  export_session.py <session-id> [--output DIR]")
         print()
         print("Options:")
         print("  list                   List recent sessions")
-        print("  <session-id>           Export session to markdown")
+        print("  <session-id>           Export session to markdown (thinking blocks always included)")
         print("  --cwd, -c              Filter by current working directory")
-        print("  --thinking, -t         Include thinking blocks")
         print("  --output, -o DIR       Output directory (filename is auto-generated)")
         print("  --project, -p PATH     Filter by project path (e.g. ~/projects/foo)")
         print("  --limit, -n N          Limit number of sessions (default: 10)")

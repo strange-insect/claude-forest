@@ -1,6 +1,6 @@
 ---
-name: codex-review
-description: OpenAI Codex CLI をバックエンドとして使ってコードレビューを実施する。新規レビューと session_id を使った継続レビューに対応。コードの修正は行わない。ユーザーが「codexでレビュー」「codexレビュー」「codex-review」と言った場合に使用。
+name: opus-review
+description: Claude Code CLI (claude -p) をバックエンドとして使い、Opusモデルでコードレビューを実施する。新規レビューと session_id を使った継続レビューに対応。コードの修正は行わない。ユーザーが「opusでレビュー」「opusレビュー」「opus-review」と言った場合に使用。
 argument-hint: "[session_id=<UUID>] [base=<branch>] [targets=<file>] [aspects=<観点>] [context=<背景>]"
 allowed-tools: Bash
 ---
@@ -47,7 +47,7 @@ WORKING_SET=$(${CLAUDE_PLUGIN_ROOT}/skills/_shared-bin/get-working-set.sh)
 
 ```bash
 LOG_PATH=$(${CLAUDE_PLUGIN_ROOT}/skills/_shared-bin/ask-pipeline.sh \
-  --skill codex-review \
+  --skill opus-review \
   [--session-id "<SESSION_ID>"] <<'EOF'
 <組み立てたメッセージ>
 EOF
@@ -60,13 +60,41 @@ EOF
 
 ```
 レビューログ: <LOG_PATH>
+セッションID: <SESSION_ID>
 
 ## レビュー結果
 
-<ログの「Codex の回答」セクションの内容>
+<!-- ログの「Opus の回答」セクションの内容を**原文のまま全文提示** -->
+
+## 対応すべき指摘
+
+<!-- 以下の条件に当てはまる指摘をここに分類する
+- typoや指摘反映漏れ、単純なバグなど
+- トレードオフがなく対応方法に検討の余地がない明確な改善点
+注意:
+- 対応規模は検討の対象ではない。対応規模の大小にかかわらず上記の基準に当てはまるものはここに分類する。
+- 該当するものがない場合は「なし」と記載する。
+-->
+
+## 検討が必要な指摘
+
+<!-- 以下の条件に当てはまる指摘を検討が必要なものとし、一覧を提示する
+- トレードオフがある指摘
+- 対応方法に意思決定が必要な指摘
+注意:
+- 該当するものがない場合は「なし」と記載する。
+-->
+
+### 推奨対応
+
+<!-- 検討が必要な指摘について、推奨対応を提示する -->
+
+## 所感
+
+<!-- レビュー結果に対する所感を記載する -->
 
 ---
-次のアクション: 修正指示 / 深掘り / セッション継続（session_id: <SESSION_ID>）
+次のアクション: 修正指示 / 深掘り
 ```
 
 - **ユーザーから明示的な指示があるまでコードを修正しないこと**
@@ -76,6 +104,5 @@ EOF
 
 ## 制約
 
-- `~/.codex/auth.json` などの内容を表示しない
 - session_id を推測で補わない
 - コードの修正は行わない（読み取り専用レビュー）

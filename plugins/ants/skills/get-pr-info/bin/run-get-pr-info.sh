@@ -2,23 +2,38 @@
 # get-pr-info: Retrieve PR information and format as Markdown
 #
 # Usage:
+#   get-pr-info.sh <PR_NUMBER>            # カレントディレクトリのリポジトリを使用
 #   get-pr-info.sh <ORG/REPO> <PR_NUMBER>
 #
-# Output:
-#   Markdown-formatted PR information to stdout and ~/claude/pr_<PR_NUMBER>.md
-#   Diff は ~/claude/pr_<PR_NUMBER>.diff に保存
+# Output (stdout):
+#   Saved file paths only
+#   Markdown は /tmp/pull-requests/<repo>_pr_<PR_NUMBER>.md に保存
+#   Diff は /tmp/pull-requests/<repo>_pr_<PR_NUMBER>.diff に保存
 
 set -euo pipefail
 
 # ---- args ----
-if [[ $# -lt 2 ]]; then
-  echo "Usage: $0 <ORG/REPO> <PR_NUMBER>" >&2
+if [[ $# -ne 1 && $# -ne 2 ]]; then
+  echo "Usage: $0 [<ORG/REPO>] <PR_NUMBER>" >&2
   exit 1
 fi
 
-REPO_FULL="$1"
-PR_NUMBER="$2"
-DIFF_DIR="${HOME}/claude"
+if [[ $# -eq 1 ]]; then
+  PR_NUMBER="$1"
+  REPO_FULL=$(gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null) || {
+    echo "Error: カレントディレクトリの GitHub リポジトリを取得できませんでした" >&2
+    exit 1
+  }
+else
+  REPO_FULL="$1"
+  PR_NUMBER="$2"
+fi
+
+if [[ ! "$PR_NUMBER" =~ ^[0-9]+$ ]]; then
+  echo "Error: PR_NUMBER must be numeric" >&2
+  exit 1
+fi
+DIFF_DIR="/tmp/pull-requests"
 REPO_SLUG="${REPO_FULL//\//_}"
 DIFF_FILE="${DIFF_DIR}/${REPO_SLUG}_pr_${PR_NUMBER}.diff"
 MD_FILE="${DIFF_DIR}/${REPO_SLUG}_pr_${PR_NUMBER}.md"

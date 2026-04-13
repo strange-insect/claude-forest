@@ -1,20 +1,18 @@
 {
-  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "strange-plugins",
-  "description": "個人的によく使う Claude Code スキル・フック",
+  "name": "claude-forest",
   "owner": {
     "name": "strange-insect"
   },
   "plugins": [
     {
-      "name": "usual-plugin",
-      "version": "0.1.3",
-      "description": "よく使う普通のスキルとフックをまとめたプラグイン",
+      "name": "ants",
+      "version": "0.1.0",
+      "description": "よく使う機能の基本セット",
       "category": "productivity",
       "author": {
         "name": "strange-insect"
       },
-      "source": "./"
+      "source": "./plugins/ants"
     }
   ]
 }

@@ -72,7 +72,9 @@ save_json() {
   local session_id="$1" answer="$2" status="$3" exit_code="$4"
 
   jq -n \
-    --arg  type       "codex" \
+    --arg  model      "codex" \
+    --arg  type       "review" \
+    --arg  mode       "$MODE" \
     --arg  session_id "$session_id" \
     --arg  timestamp  "$(date '+%Y-%m-%d %H:%M:%S')" \
     --arg  directory  "$(pwd)" \
@@ -82,7 +84,9 @@ save_json() {
     --arg  status     "$status" \
     --argjson exit_code "$exit_code" \
     '{
+      model:      $model,
       type:       $type,
+      mode:       $mode,
       session_id: $session_id,
       timestamp:  $timestamp,
       directory:  $directory,
@@ -128,6 +132,9 @@ else
   PROMPT="$MESSAGE"
 fi
 
+# --- 新規 / 継続 ---
+MODE=$([[ -n "$SESSION_ID" ]] && echo "continuation" || echo "new")
+
 # --- Codex 実行 ---
 EXIT_CODE=0
 
@@ -158,7 +165,7 @@ $(cat "$TMP_STDERR")"
 部分的な出力:
 $(cat "$TMP_MSG")"
   fi
-  save_json "unresolved" "$ERROR_OUTPUT" "error" "$EXIT_CODE"
+  save_json "${SESSION_ID:-unresolved}" "$ERROR_OUTPUT" "error" "$EXIT_CODE"
   exit 1
 fi
 
