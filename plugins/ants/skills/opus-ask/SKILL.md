@@ -5,7 +5,7 @@ description: >-
   session_id を使った会話継続に対応。
   ユーザーが「opusに聞いて」「opus ask」「opus-ask」「opusで調べて」と言った場合に使用。
 
-  argument: "[session_id=<UUID>] <質問>"
+  argument: "[session_id=<UUID>] [output_dir=<path>] <質問>"
 allowed-tools: Bash
 context: fork
 model: sonnet
@@ -18,6 +18,7 @@ model: sonnet
 `ARGUMENTS` から以下を読み取る。
 
 - `session_id=<UUID>` / `セッション <UUID>` が含まれる → `--session-id <UUID>` を付加
+- `output_dir=<path>` が含まれる → `--output-dir <path>` を付加
 - 残りをメッセージとして使用
 
 ### 2. パイプライン実行
@@ -25,7 +26,8 @@ model: sonnet
 ```bash
 ${CLAUDE_PLUGIN_ROOT}/skills/_shared-bin/ask-pipeline.sh \
   --skill opus-ask \
-  [--session-id "<SESSION_ID>"] <<'EOF'
+  [--session-id "<SESSION_ID>"] \
+  [--output-dir "<OUTPUT_DIR>"] <<'EOF'
 <メッセージ>
 EOF
 ```

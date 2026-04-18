@@ -52,6 +52,10 @@ SRC_FILE="${JSON_DIR}/${JSON_BASE}-${FIELD}-src.txt"
 DST_FILE="${JSON_DIR}/${JSON_BASE}-${FIELD}-translated.txt"
 TRANSLATED_JSON="${JSON_DIR}/${JSON_BASE}.translated.json"
 
+# --- 翻訳用中間テキストは終了時に削除 ---
+cleanup() { rm -f "$SRC_FILE" "$DST_FILE"; }
+trap cleanup EXIT
+
 # --- 指定フィールドを抽出 → 翻訳元ファイル ---
 jq -r --arg f "$FIELD" '.[$f]' "$JSON_FILE" > "$SRC_FILE"
 

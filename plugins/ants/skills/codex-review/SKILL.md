@@ -6,7 +6,7 @@ description: >-
   ユーザーが「codexでレビュー」「codexレビュー」「codex-review」と言った場合に使用。
   スキル名を指定せず単に「レビューして」と言った場合は使用しない。
 
-  argument: "[session_id=<UUID>] [base=<branch>] [targets=<レビュー範囲>] [aspects=<観点>] [context=<背景>]"
+  argument: "[session_id=<UUID>] [base=<branch>] [targets=<レビュー範囲>] [aspects=<観点>] [context=<背景>] [output_dir=<path>]"
 allowed-tools: Bash
 context: fork
 model: sonnet
@@ -21,6 +21,7 @@ model: sonnet
 `ARGUMENTS` から以下を読み取る:
 
 - `session_id=<UUID>` / `セッション <UUID>` → `--session-id <UUID>` を付加
+- `output_dir=<path>` → `--output-dir <path>` を付加
 - `base=<branch>` / `PR差分` / `ブランチ差分` → ベースブランチとの差分をレビューする指示をメッセージに含める
 - ファイル・ディレクトリ名 → レビュー対象の指示をメッセージに含める
 - `〜の観点で` / `〜についてレビュー` → その観点に絞る指示をメッセージに含める
@@ -77,7 +78,8 @@ model: sonnet
 ```bash
 ${CLAUDE_PLUGIN_ROOT}/skills/_shared-bin/ask-pipeline.sh \
   --skill codex-review \
-  [--session-id "<SESSION_ID>"] <<'EOF'
+  [--session-id "<SESSION_ID>"] \
+  [--output-dir "<OUTPUT_DIR>"] <<'EOF'
 <組み立てたメッセージ>
 EOF
 ```

@@ -3,13 +3,13 @@
 # ask 系の処理パイプラインを実行し、Markdown ログファイルパスを返す
 #
 # 使い方:
-#   ask-pipeline.sh --skill <name> [--session-id UUID] --message "質問テキスト"
-#   ask-pipeline.sh --skill <name> [--session-id UUID] <<'EOF'
+#   ask-pipeline.sh --skill <name> [--session-id UUID] [--output-dir PATH] --message "質問テキスト"
+#   ask-pipeline.sh --skill <name> [--session-id UUID] [--output-dir PATH] <<'EOF'
 #   質問テキスト（複数行可）
 #   EOF
 #
 # 出力 (stdout):
-#   <Markdown ログファイルの絶対パス>
+#   <出力先にコピーされた Markdown ログファイルの絶対パス>
 #
 # 終了コード:
 #   0: 成功
@@ -22,12 +22,14 @@ SHARED_BIN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL=""
 MESSAGE=""
 SESSION_ID=""
+OUTPUT_DIR=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --skill)      SKILL="$2";      shift 2 ;;
     --message)    MESSAGE="$2";    shift 2 ;;
     --session-id) SESSION_ID="$2"; shift 2 ;;
+    --output-dir) OUTPUT_DIR="$2"; shift 2 ;;
     *) echo "ERROR: 不明なオプション: $1" >&2; exit 1 ;;
   esac
 done
@@ -63,5 +65,35 @@ fi
 LOG_PATH=$("${SHARED_BIN}/save-ask-log.sh" "$JSON_PATH") || PIPELINE_EXIT=$?
 [[ -z "${LOG_PATH:-}" ]] && { echo "ERROR: save-ask-log.sh がパスを返しませんでした" >&2; exit 1; }
 
-printf '%s\n' "$LOG_PATH"
+# --- 中間 JSON ファイルは Markdown 生成後に削除 ---
+if [[ -f "$LOG_PATH" ]]; then
+  rm -f "$ORIGINAL_JSON_PATH"
+  [[ "$JSON_PATH" != "$ORIGINAL_JSON_PATH" ]] && rm -f "$JSON_PATH"
+fi
+
+# --- 出力先ディレクトリの決定 ---
+# 基準ディレクトリ: git リポジトリ内ならリポジトリルート、そうでなければカレントディレクトリ
+BASE_DIR=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+
+if [[ -z "$OUTPUT_DIR" ]]; then
+  TARGET_DIR="${BASE_DIR}/.llm-ask"
+elif [[ "$OUTPUT_DIR" = /* ]]; then
+  TARGET_DIR="$OUTPUT_DIR"
+else
+  TARGET_DIR="${BASE_DIR}/${OUTPUT_DIR}"
+fi
+
+# --- 出力先ディレクトリの初期化 ---
+# 新規作成時のみ .gitignore(*) を同梱。既存ディレクトリには触らない（ユーザーの Git 管理意図を尊重）
+if [[ ! -d "$TARGET_DIR" ]]; then
+  mkdir -p "$TARGET_DIR"
+  printf '*\n' > "${TARGET_DIR}/.gitignore"
+fi
+
+# --- 最終 Markdown を出力先にコピー ---
+TARGET_DIR=$(cd "$TARGET_DIR" && pwd)
+COPIED_PATH="${TARGET_DIR}/$(basename "$LOG_PATH")"
+cp "$LOG_PATH" "$COPIED_PATH"
+
+printf '%s\n' "$COPIED_PATH"
 exit "$PIPELINE_EXIT"
