@@ -1,8 +1,13 @@
 ---
 name: export-session
-description: Claude Code のセッション会話全文を Markdown ファイルにエクスポートする。ユーザーが「セッションをエクスポート」「export-session」と言った場合に使用。
-argument-hint: "[session_id|current|list] [--cwd]"
+description: >-
+  Claude Code のセッション会話全文を Markdown ファイルにエクスポートする。
+  ユーザーが「セッションをエクスポート」「export-session」と言った場合に使用。
+
+  argument: "session_id=<UUID|current> | list [--cwd]"
 allowed-tools: Bash
+context: fork
+model: haiku
 ---
 
 ## 手順
@@ -12,9 +17,10 @@ allowed-tools: Bash
 `$ARGUMENTS` から以下を読み取る。
 
 - `list` が含まれる → セッション一覧を表示
-- UUID 形式の文字列が含まれる → 指定セッションをエクスポート
+- `session_id=<UUID>` が含まれる → 指定セッションをエクスポート
+- `session_id=current` が含まれる → 現在のセッションをエクスポート
 - `--cwd` が含まれる（list 時）→ 現在のディレクトリのセッションに限定
-- 何も指定なし → `current` として現在のセッションをエクスポート
+- `session_id` の指定がない場合 → エラーを返す（必須）
 
 ### 2. 実行
 

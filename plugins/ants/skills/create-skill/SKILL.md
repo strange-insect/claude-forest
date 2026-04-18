@@ -1,7 +1,10 @@
 ---
 name: create-skill
-description: 対話的にClaude Codeのカスタムスキル（SKILL.md）を新規作成する。スキル名・用途・引数・ツール・実行コンテキスト等をヒアリングし、SKILL.md と補助スクリプトを生成する。
-argument-hint: "[スキル名] [用途の説明]"
+description: >-
+  対話的にClaude Codeのカスタムスキル（SKILL.md）を新規作成する。
+  スキル名・用途・引数・ツール・実行コンテキスト等をヒアリングし、SKILL.md と補助スクリプトを生成する。
+
+  argument: "[スキル名] [用途の説明]"
 allowed-tools: Read, Write, Bash, Glob, Grep, Edit
 disable-model-invocation: true
 ---

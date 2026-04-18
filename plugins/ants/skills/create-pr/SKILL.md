@@ -1,7 +1,9 @@
 ---
 name: create-pr
-description: GitHubプルリクエストを作成する。テンプレートに従いPR本文を生成し gh pr create で作成する。
-argument-hint: "[repo=<owner/repo>] [head=<branch>] [base=<branch>] [template=<ファイルパス>] [draft=<true|false>]"
+description: >-
+  GitHubプルリクエストを作成する。テンプレートに従いPR本文を生成し gh pr create で作成する。
+
+  argument: "[repository=<owner/repo>] [head=<branch>] [base=<branch>] [template=<ファイルパス>] [draft=<true|false>]"
 allowed-tools: Bash, Read, Glob
 ---
 
@@ -17,7 +19,7 @@ allowed-tools: Bash, Read, Glob
 
 | 引数 | 説明 | 省略時の動作 |
 |---|---|---|
-| `repo=<owner/repo>` | 対象リポジトリ（`組織/リポジトリ` 形式） | カレントディレクトリの git リモートから自動取得 |
+| `repository=<owner/repo>` | 対象リポジトリ（`組織/リポジトリ` 形式） | カレントディレクトリの git リモートから自動取得 |
 | `head=<branch>` | PRのヘッドブランチ（マージ元） | カレントブランチを使用 |
 | `base=<branch>` | PRのベースブランチ（マージ先） | git log でブランチの派生元を自動検出 |
 | `template=<path>` | PRテンプレートファイルパス | リポジトリの標準テンプレート → デフォルトテンプレートの順で探す |
@@ -39,15 +41,15 @@ gh auth status
 
 ## 3. リポジトリ・ブランチの決定
 
-### リポジトリ（`repo`）
+### リポジトリ（`repository`）
 
-- `repo=<owner/repo>` が指定されている場合はそれを使用
+- `repository=<owner/repo>` が指定されている場合はそれを使用
 - 指定がない場合:
   ```bash
   # カレントディレクトリの git リモートから取得
   gh repo view --json nameWithOwner -q .nameWithOwner
   ```
-  取得できない場合はユーザーに `repo=` の指定を促して終了
+  取得できない場合はユーザーに `repository=` の指定を促して終了
 
 ### ヘッドブランチ（`head`）
 

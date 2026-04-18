@@ -5,7 +5,11 @@
 ## マーケットプレイスの追加
 
 ```bash
+# プラグインを追加
 claude plugin marketplace add strange-insect/claude-forest
+
+# 追加したプラグインを確認
+claude plugin marketplace list
 ```
 
 ## プラグイン一覧

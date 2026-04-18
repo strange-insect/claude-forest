@@ -1,10 +1,17 @@
 ---
-name: puml
+name: plant-uml
 description: >-
-  PlantUMLのエンコード/デコードおよびMarkdown内のPlantUMLコードブロックとKroki URLの相互変換を行う。
-  ユーザーが「puml encode」「puml decode」「puml md-to-url」「puml md-to-code」「UML画像生成」「UMLソース展開」「markdownのpumlを変換」と言った場合に使用。
-argument-hint: "<encode|decode|md-to-url|md-to-code> [ソース/URL/ファイルパス]"
+  Krokiの画像URLとPlantUMLソースコードの相互変換、またはそれらが含まれるMarkdown文書の相互変換を行う。
+  1. ユーザーがPlantUMLの画像生成を指示した場合
+  2. ユーザーにPlantUML画像による説明を提示する場合
+  3. Markdown文書に含まれる`puml`, `plantuml`のコードスニペットを画像に変換する場合
+  4. PlantUML画像(krokiのPlantUML画像URL)が含まれるMarkdown文書をソースコードに変換して読む場合
+  に使用。
+
+  argument: "<encode|decode|md-to-url|md-to-code> [ソースコード/URL/Markdownファイルパス]"
 allowed-tools: Bash, Read
+context: fork
+model: sonnet
 ---
 
 PlantUMLのエンコード/デコード、およびMarkdown内のPlantUMLコードブロックとKroki URLの相互変換を行う。

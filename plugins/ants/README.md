@@ -22,7 +22,7 @@ claude plugin install ants@claude-forest
 | `get-pr-info` | GitHub PR の情報（概要・会話・レビュー・行コメント・コミット・差分）を取得して `/tmp/pull-requests/` に保存する |
 | `opus-ask` | Opus モデルで 1問1答形式の質問。会話継続に対応 |
 | `opus-review` | Opus モデルでコードレビュー。新規・継続レビューに対応 |
-| `puml` | PlantUML のエンコード/デコードおよび Markdown と Kroki URL の相互変換 |
+| `plant-uml` | PlantUML のエンコード/デコードおよび Markdown と Kroki URL の相互変換 |
 
 ## フック一覧
 
@@ -36,8 +36,8 @@ claude plugin install ants@claude-forest
 |---------|------|-----------|
 | `jq` | JSON 解析 | `codex-ask`, `codex-review`, `opus-ask`, `opus-review`, `get-pr-info`, `session-start` |
 | `gh` | GitHub API・PR 操作 | `get-pr-info`, `create-pr` |
-| `curl` | PlantUML サーバーへのリクエスト | `puml` |
-| `python3` | エンコード/デコード・セッションエクスポート | `puml`, `export-session` |
+| `curl` | PlantUML サーバーへのリクエスト | `plant-uml` |
+| `python3` | エンコード/デコード・セッションエクスポート | `plant-uml`, `export-session` |
 | `codex` | OpenAI Codex CLI | `codex-ask`, `codex-review` |
 | `claude` | Claude Code CLI（claude -p） | `opus-ask`, `opus-review` |
 

@@ -1,8 +1,14 @@
 ---
 name: opus-ask
-description: Claude Code CLI (claude -p) + Opus モデルを使い、1問1答形式で Opus に質問する。session_id を使った会話継続に対応。ユーザーが「opusに聞いて」「opus ask」「opus-ask」「opusで調べて」と言った場合に使用。
-argument-hint: "<質問> [session_id=<UUID>]"
+description: >-
+  Claude Code CLI (claude -p) + Opus モデルを使い、1問1答形式で Opus に質問する。
+  session_id を使った会話継続に対応。
+  ユーザーが「opusに聞いて」「opus ask」「opus-ask」「opusで調べて」と言った場合に使用。
+
+  argument: "[session_id=<UUID>] <質問>"
 allowed-tools: Bash
+context: fork
+model: sonnet
 ---
 
 ## 手順
@@ -17,18 +23,19 @@ allowed-tools: Bash
 ### 2. パイプライン実行
 
 ```bash
-LOG_PATH=$(${CLAUDE_PLUGIN_ROOT}/skills/_shared-bin/ask-pipeline.sh \
+${CLAUDE_PLUGIN_ROOT}/skills/_shared-bin/ask-pipeline.sh \
   --skill opus-ask \
   [--session-id "<SESSION_ID>"] <<'EOF'
 <メッセージ>
 EOF
-)
 ```
+
+パイプラインを実行するとログファイルのパスが表示される
 
 ### 3. 返却
 
 ```
-ログ: <LOG_PATH>
+ログファイル: <LOG_PATH>
 ```
 
 ---

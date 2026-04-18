@@ -2,8 +2,7 @@
 # get-pr-info: Retrieve PR information and format as Markdown
 #
 # Usage:
-#   get-pr-info.sh <PR_NUMBER>            # カレントディレクトリのリポジトリを使用
-#   get-pr-info.sh <ORG/REPO> <PR_NUMBER>
+#   get-pr-info.sh pr_number=<PR_NUMBER> [repository=<ORG/REPO>]
 #
 # Output (stdout):
 #   Saved file paths only
@@ -13,20 +12,35 @@
 set -euo pipefail
 
 # ---- args ----
-if [[ $# -ne 1 && $# -ne 2 ]]; then
-  echo "Usage: $0 [<ORG/REPO>] <PR_NUMBER>" >&2
+PR_NUMBER=""
+REPO_FULL=""
+
+for arg in "$@"; do
+  case "$arg" in
+    pr_number=*)
+      PR_NUMBER="${arg#pr_number=}"
+      ;;
+    repository=*)
+      REPO_FULL="${arg#repository=}"
+      ;;
+    *)
+      echo "Error: unknown argument '$arg'" >&2
+      echo "Usage: $0 pr_number=<PR_NUMBER> [repository=<ORG/REPO>]" >&2
+      exit 1
+      ;;
+  esac
+done
+
+if [[ -z "$PR_NUMBER" ]]; then
+  echo "Usage: $0 pr_number=<PR_NUMBER> [repository=<ORG/REPO>]" >&2
   exit 1
 fi
 
-if [[ $# -eq 1 ]]; then
-  PR_NUMBER="$1"
+if [[ -z "$REPO_FULL" ]]; then
   REPO_FULL=$(gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null) || {
     echo "Error: カレントディレクトリの GitHub リポジトリを取得できませんでした" >&2
     exit 1
   }
-else
-  REPO_FULL="$1"
-  PR_NUMBER="$2"
 fi
 
 if [[ ! "$PR_NUMBER" =~ ^[0-9]+$ ]]; then
