@@ -15,7 +15,7 @@ model: sonnet
 
 ### 1. 入力解釈
 
-`$ARGUMENTS` から以下を読み取る。
+`ARGUMENTS` から以下を読み取る。
 
 - `session_id=<UUID>` / `セッション <UUID>` が含まれる → `--session-id <UUID>` を付加
 - 残りをメッセージとして使用

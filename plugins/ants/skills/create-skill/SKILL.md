@@ -17,7 +17,7 @@ disable-model-invocation: true
 
 ## 1. 要件のヒアリング
 
-`$ARGUMENTS` からスキル名や用途が読み取れる場合はそれを初期値とする。
+`ARGUMENTS` からスキル名や用途が読み取れる場合はそれを初期値とする。
 不足している情報があればユーザーに質問する。
 
 ### 必須ヒアリング項目
@@ -111,14 +111,33 @@ disable-model-invocation: true         # 手動のみの場合
 3. 出力フォーマット（ある場合）
 4. 制約事項（ある場合）
 
-### 変数の使い方
+### `ARGUMENTS` とは
 
-| 変数 | 説明 |
+ユーザーがスキル呼び出し時に渡した引数文字列を表す。ランタイムによって SKILL.md 本文に展開される。
+
+| 記法 | 意味 |
 |---|---|
-| `$ARGUMENTS` | ユーザーが渡した全引数 |
-| `$ARGUMENTS[N]` / `$N` | N番目の引数（0始まり） |
-| `${CLAUDE_SKILL_DIR}` | SKILL.md のあるディレクトリパス |
-| `` !`command` `` | 事前実行されるシェルコマンド（出力が展開される） |
+| <code>&#36;ARGUMENTS</code> | 全引数に置換される |
+| <code>&#36;ARGUMENTS[N]</code> / <code>&#36;N</code> | N番目の引数に置換される（0始まり） |
+
+本文中に <code>&#36;ARGUMENTS</code> が**含まれない**場合、ランタイムはプロンプト末尾に `ARGUMENTS: <値>` を自動付与する。
+
+### `ARGUMENTS` の参照方法（本文での書き方）
+
+手順文中で引数を参照するときは、**先頭の `$` を外した `ARGUMENTS` と記述する**。理由は以下。
+
+- `ARGUMENTSを取得する`というようなプロンプトのARGUMENTSが展開されてしまうと`3を取得する`のような意味不明なプロンプトになってしまう
+- 本文に <code>&#36;ARGUMENTS</code> が無ければランタイムが末尾に `ARGUMENTS: <値>` を付与するため、`ARGUMENTS` という語だけで引数を指し示せる。
+- <code>&#36;ARGUMENTS</code> を本文に書くと、手順説明やドキュメント部分など引数値にしたくない箇所まで文字列置換されてしまい、モデルに指示の意図が伝わらない。
+
+### その他の置換トークン
+
+| 記法 | 説明 |
+|---|---|
+| <code>&#36;{CLAUDE_SKILL_DIR}</code> | SKILL.md のあるディレクトリの絶対パス |
+| <code>!&#96;command&#96;</code> | 事前実行されるシェルコマンド（出力が本文に展開される） |
+
+いずれもランタイムによってプロンプト送信前に置換される。ドキュメントとして記述する場合は HTML エンティティ等でエスケープする必要がある（このテーブル自体が <code>&#36;</code> や <code>&#96;</code> を使って置換を回避している）。
 
 ---
 
@@ -128,7 +147,7 @@ disable-model-invocation: true         # 手動のみの場合
 
 - パス: `.claude/skills/<name>/bin/<script-name>.sh`
 - 先頭に `#!/usr/bin/env bash` と `set -euo pipefail`
-- SKILL.md からは `${CLAUDE_SKILL_DIR}/bin/<script-name>.sh` で参照
+- SKILL.md からは <code>&#36;{CLAUDE_SKILL_DIR}/bin/&lt;script-name&gt;.sh</code> で参照
 
 ```bash
 mkdir -p .claude/skills/<name>/bin

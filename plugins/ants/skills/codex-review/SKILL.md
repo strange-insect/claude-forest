@@ -18,7 +18,7 @@ model: sonnet
 
 ### 1. 入力解釈
 
-`$ARGUMENTS` から以下を読み取る:
+`ARGUMENTS` から以下を読み取る:
 
 - `session_id=<UUID>` / `セッション <UUID>` → `--session-id <UUID>` を付加
 - `base=<branch>` / `PR差分` / `ブランチ差分` → ベースブランチとの差分をレビューする指示をメッセージに含める

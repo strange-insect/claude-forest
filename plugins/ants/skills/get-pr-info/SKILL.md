@@ -14,7 +14,7 @@ model: haiku
 
 ### 1. 入力解釈
 
-`$ARGUMENTS` から以下を読み取る。
+`ARGUMENTS` から以下を読み取る。
 
 - pr_number 番号（数字）が必須
 - repositoryが渡された場合はそれを使用。なければカレントディレクトリのリポジトリを使用

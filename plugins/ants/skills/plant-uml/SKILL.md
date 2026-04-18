@@ -18,8 +18,8 @@ PlantUMLのエンコード/デコード、およびMarkdown内のPlantUMLコー�
 
 ## 引数の解釈
 
-- `$ARGUMENTS[0]`: サブコマンド（`encode`, `decode`, `md-to-url`, `md-to-code`）
-- `$ARGUMENTS[1]` 以降: 対象のソースコード、URL、またはファイルパス
+- `ARGUMENTS[0]`: サブコマンド（`encode`, `decode`, `md-to-url`, `md-to-code`）
+- `ARGUMENTS[1]` 以降: 対象のソースコード、URL、またはファイルパス
 
 ## encode（ソースコード → SVG URL）
 
