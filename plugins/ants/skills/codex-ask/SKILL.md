@@ -23,7 +23,8 @@ model: sonnet
 
 ### 2. パイプライン実行
 
-調査内容によっては 10 分以上かかることがあるため、**Bash ツールの `run_in_background: true` でバックグラウンド実行** する（同期実行だとデフォルトタイムアウトで中断される可能性がある）。
+依頼した作業の規模によっては応答に数分以上の時間がかかるため、タイムアウト値を最大にしてフォアグラウンド実行する。
+Skill使用時のバックグラウンド実行には不具合らしき挙動が報告されているため必ずフォアグラウンドで実行すること。
 
 ```bash
 ${CLAUDE_PLUGIN_ROOT}/skills/_shared-bin/ask-pipeline.sh \
@@ -33,8 +34,6 @@ ${CLAUDE_PLUGIN_ROOT}/skills/_shared-bin/ask-pipeline.sh \
 <メッセージ>
 EOF
 ```
-
-プロセスの完了通知を受け取ったら、stdout の最終行からログファイルのパスを取得する。
 
 ### 3. 返却
 

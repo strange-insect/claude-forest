@@ -6,7 +6,12 @@ description: >-
   ユーザーが「codexでレビュー」「codexレビュー」「codex-review」と言った場合に使用。
   スキル名を指定せず単に「レビューして」と言った場合は使用しない。
 
-  argument: "[session_id=<UUID>] [base=<branch>] [targets=<レビュー範囲>] [aspects=<観点>] [context=<背景>] [output_dir=<path>]"
+  レビュー範囲の指定方針:
+  - 未コミットの変更をレビューする場合は targets, base を未指定とする
+  - mainなど他ブランチとの差分をレビューする場合は base= を指定する
+  - 特定のファイルやディレクトリに絞るときは targets= を指定する（`〇〇フォルダ配下の*.mdファイル`など自然言語での指定）
+
+  argument: "[session_id=<UUID>] [base=<比較元ブランチ名>] [targets=<レビュー範囲>] [aspects=<観点>] [context=<背景>] [output_dir=<path>]"
 allowed-tools: Bash
 context: fork
 model: sonnet
@@ -75,7 +80,8 @@ model: sonnet
 - 背景: `【背景・修正意図・注意点】\n<内容>`
 - 継続指示: そのままメッセージに含める
 
-レビュー規模によっては 10 分以上かかることがあるため、**Bash ツールの `run_in_background: true` でバックグラウンド実行** する（同期実行だとデフォルトタイムアウトで中断される可能性がある）。
+レビュー規模によっては応答に数分以上の時間がかかるため、タイムアウト値を最大にしてフォアグラウンド実行する。
+Skill使用時のバックグラウンド実行には不具合らしき挙動が報告されているため必ずフォアグラウンドで実行すること。
 
 ```bash
 ${CLAUDE_PLUGIN_ROOT}/skills/_shared-bin/ask-pipeline.sh \
@@ -85,8 +91,6 @@ ${CLAUDE_PLUGIN_ROOT}/skills/_shared-bin/ask-pipeline.sh \
 <組み立てたメッセージ>
 EOF
 ```
-
-プロセスの完了通知を受け取ったら、stdout の最終行からログファイルのパスを取得する。
 
 ### 4. 結果の提示
 
