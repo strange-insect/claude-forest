@@ -282,6 +282,8 @@ def convert_session_to_markdown(jsonl_path: Path, include_thinking: bool = False
             message = rec.get("message", {})
             content = message.get("content", [])
             ts = rec.get("timestamp", "")
+            model = message.get("model", "")
+            heading = f"### Assistant ({model})" if model else "### Assistant"
 
             if not isinstance(content, list):
                 continue
@@ -296,7 +298,7 @@ def convert_session_to_markdown(jsonl_path: Path, include_thinking: bool = False
                     thinking_text = block.get("thinking", "")
                     if thinking_text:
                         if not has_visible_content:
-                            md_lines.append(f"### Assistant")
+                            md_lines.append(heading)
                             if ts:
                                 md_lines.append(f"*{format_timestamp(ts)}*")
                             md_lines.append("")
@@ -308,7 +310,7 @@ def convert_session_to_markdown(jsonl_path: Path, include_thinking: bool = False
                     text = block.get("text", "")
                     if text:
                         if not has_visible_content:
-                            md_lines.append(f"### Assistant")
+                            md_lines.append(heading)
                             if ts:
                                 md_lines.append(f"*{format_timestamp(ts)}*")
                             md_lines.append("")
@@ -318,7 +320,7 @@ def convert_session_to_markdown(jsonl_path: Path, include_thinking: bool = False
 
                 elif block_type == "tool_use":
                     if not has_visible_content:
-                        md_lines.append(f"### Assistant")
+                        md_lines.append(heading)
                         if ts:
                             md_lines.append(f"*{format_timestamp(ts)}*")
                         md_lines.append("")
