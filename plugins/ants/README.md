@@ -78,7 +78,6 @@ claude plugin install ants@claude-forest
 | スキル名 | 説明 |
 |---------|------|
 | `create-pr` | 現在のブランチから GitHub PR を作成する。テンプレート指定に対応 |
-| `create-skill` | 対話的にカスタムスキル（SKILL.md）を新規作成する |
 
 ## 既知の問題
 

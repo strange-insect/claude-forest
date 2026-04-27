@@ -21,7 +21,6 @@ ants の agent / skill / スクリプトが扱う権限と、信頼できない�
 | skill | 宣言ツール | 補足 |
 |-------|-----------|------|
 | `create-pr` | `Bash, Read, Glob` | テンプレート探索・本文生成 |
-| `create-skill` | `Read, Write, Bash, Glob, Grep, Edit` | SKILL.md 生成 |
 
 ## バックエンド側の built-in ツールセット
 
