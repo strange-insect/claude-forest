@@ -3,8 +3,8 @@
 # ask 系の処理パイプラインを実行し、Markdown ログファイルパスを返す
 #
 # 使い方:
-#   ask-pipeline.sh --skill <name> [--session-id UUID] [--output-dir PATH] --message "質問テキスト"
-#   ask-pipeline.sh --skill <name> [--session-id UUID] [--output-dir PATH] <<'EOF'
+#   ask-pipeline.sh --agent <name> [--session-id UUID] [--output-dir PATH] --message "メッセージ"
+#   ask-pipeline.sh --agent <name> [--session-id UUID] [--output-dir PATH] <<'EOF'
 #   質問テキスト（複数行可）
 #   EOF
 #
@@ -14,19 +14,23 @@
 # 終了コード:
 #   0: 成功
 #   1: エラー
+#
+# 注: 各パイプラインステップの exit code を個別に捕捉してエラー内容を含むログを残すため、
+# 意図的に `set -e` を外している（`-uo pipefail` のみ）。
 set -uo pipefail
 
 SHARED_BIN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PLUGIN_ROOT="$(cd "${SHARED_BIN}/.." && pwd)"
 
 # --- 引数パース ---
-SKILL=""
-MESSAGE=""
+AGENT=""
 SESSION_ID=""
 OUTPUT_DIR=""
+MESSAGE=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --skill)      SKILL="$2";      shift 2 ;;
+    --agent)      AGENT="$2";      shift 2 ;;
     --message)    MESSAGE="$2";    shift 2 ;;
     --session-id) SESSION_ID="$2"; shift 2 ;;
     --output-dir) OUTPUT_DIR="$2"; shift 2 ;;
@@ -34,13 +38,15 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-[[ -z "$SKILL" ]] && { echo "ERROR: --skill が指定されていません" >&2; exit 1; }
+[[ -z "$AGENT" ]] && { echo "ERROR: --agent が指定されていません" >&2; exit 1; }
+# パストラバーサル防止: agent 名は英数・ハイフン・アンダースコアのみ許可
+[[ "$AGENT" =~ ^[A-Za-z0-9_-]+$ ]] || { echo "ERROR: 不正な agent 名: $AGENT" >&2; exit 1; }
 [[ -z "$MESSAGE" ]] && MESSAGE=$(cat)
 [[ -z "$MESSAGE" ]] && { echo "ERROR: --message または stdin でメッセージを指定してください" >&2; exit 1; }
 
-# --- スキル名からスクリプトパスを解決 ---
-# 規則: skills/<skill>/bin/run-<skill>.sh
-RUN_SCRIPT="${SHARED_BIN}/../${SKILL}/bin/run-${SKILL}.sh"
+# --- agent 名からスクリプトパスを解決 ---
+# 規則: agents/<agent>.sh
+RUN_SCRIPT="${PLUGIN_ROOT}/agents/${AGENT}.sh"
 [[ ! -x "$RUN_SCRIPT" ]] && { echo "ERROR: 実行できません: $RUN_SCRIPT" >&2; exit 1; }
 
 # --- パイプライン実行 ---
@@ -52,7 +58,7 @@ RUN_ARGS=(--message "$MESSAGE")
 [[ -n "$SESSION_ID" ]] && RUN_ARGS+=(--session-id "$SESSION_ID")
 
 JSON_PATH=$("$RUN_SCRIPT" "${RUN_ARGS[@]}") || PIPELINE_EXIT=$?
-[[ -z "${JSON_PATH:-}" ]] && { echo "ERROR: run スクリプトがパスを返しませんでした" >&2; exit 1; }
+[[ -z "${JSON_PATH:-}" ]] && { echo "ERROR: run スクリプトがパスを返しませんでした" >&2; exit "${PIPELINE_EXIT:-1}"; }
 
 ORIGINAL_JSON_PATH="$JSON_PATH"
 if TRANSLATED_JSON_PATH=$("${SHARED_BIN}/translate-json.sh" "$JSON_PATH" answer); then
@@ -63,7 +69,7 @@ else
 fi
 
 LOG_PATH=$("${SHARED_BIN}/save-ask-log.sh" "$JSON_PATH") || PIPELINE_EXIT=$?
-[[ -z "${LOG_PATH:-}" ]] && { echo "ERROR: save-ask-log.sh がパスを返しませんでした" >&2; exit 1; }
+[[ -z "${LOG_PATH:-}" ]] && { echo "ERROR: save-ask-log.sh がパスを返しませんでした" >&2; exit "${PIPELINE_EXIT:-1}"; }
 
 # --- 中間 JSON ファイルは Markdown 生成後に削除 ---
 if [[ -f "$LOG_PATH" ]]; then
@@ -91,9 +97,15 @@ if [[ ! -d "$TARGET_DIR" ]]; then
 fi
 
 # --- 最終 Markdown を出力先にコピー ---
-TARGET_DIR=$(cd "$TARGET_DIR" && pwd)
+TARGET_DIR=$(cd "$TARGET_DIR" && pwd) || {
+  echo "ERROR: 出力先ディレクトリにアクセスできません: $TARGET_DIR" >&2
+  exit 1
+}
 COPIED_PATH="${TARGET_DIR}/$(basename "$LOG_PATH")"
-cp "$LOG_PATH" "$COPIED_PATH"
+cp "$LOG_PATH" "$COPIED_PATH" || {
+  echo "ERROR: Markdown ログのコピーに失敗しました: $LOG_PATH -> $COPIED_PATH" >&2
+  exit 1
+}
 
 printf '%s\n' "$COPIED_PATH"
 exit "$PIPELINE_EXIT"

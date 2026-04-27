@@ -1,6 +1,6 @@
 # ask パイプライン全体フロー
 
-`codex-ask` / `codex-review` / `opus-ask` / `opus-review` の 4 スキルが共通で使う処理フローをまとめる。
+`codex-ask` / `codex-review` / `opus-ask` / `opus-review` の 4 agent が共通で使う処理フローをまとめる。
 
 個別スクリプトの仕様は [shellscripts/ask-pipeline.md](../shellscripts/ask-pipeline.md) / [shellscripts/save-ask-log.md](../shellscripts/save-ask-log.md) / [shellscripts/translate-json.md](../shellscripts/translate-json.md) を参照。
 
@@ -9,18 +9,18 @@
 ```
 親セッション
   │
-  │ 1. /ants:<skill> 呼び出し
+  │ 1. Agent ツール経由で <agent> 起動
   ▼
-fork セッション（スキル本体、SKILL.md 実行）
+subagent（agent 本体、agents/<name>.md 実行）
   │
-  │ 2. ARGUMENTS 解釈
+  │ 2. 呼び出し prompt 解釈
   │ 3. Bash ツールでフォアグラウンド実行（timeout は最大値）
   ▼
 ask-pipeline.sh
   │
-  │ 4. run-<skill>.sh 実行
+  │ 4. agents/<name>.sh 実行
   ▼
-run-<skill>.sh
+agents/<name>.sh
   │ 5. codex / claude バックエンド呼び出し
   │ 6. 中間 JSON 生成 → /tmp/<model>-ask/<basename>.json
   ▼
@@ -32,7 +32,7 @@ ask-pipeline.sh
   │ 9. 中間 JSON 削除（成功時）
   │10. 出力ディレクトリ（<repo>/.llm-ask）にコピー
   ▼
-fork セッション
+subagent
   │11. stdout 最終行から Markdown ログのパス取得
   ▼
 親セッション
@@ -42,32 +42,32 @@ fork セッション
 
 ## ステップ詳細
 
-### 1. スキル呼び出し
+### 1. agent 呼び出し
 
-ユーザーが `/ants:codex-ask <message>` のようにスキルを起動。Claude Code は SKILL.md を fork セッションで実行する。
+親セッションの LLM が Agent ツール経由で `codex-ask` などの agent を起動する。Claude Code は対応する `agents/<name>.md` を subagent として実行する。
 
-### 2. ARGUMENTS 解釈
+### 2. 呼び出し prompt 解釈
 
-SKILL.md に書かれた手順に従い、`session_id` / `output_dir` / メッセージ本文を抽出する。
+`agents/<name>.md` に書かれた手順に従い、`session_id` / `output_dir` / `message_to_send`（または `review_instruction`）を抽出する。
 
 ### 3. Bash 実行（フォアグラウンド）
 
-`ask-pipeline.sh` を Bash ツールでフォアグラウンド実行する。長時間化する可能性があるため、Bash の timeout は最大値に設定する。Skill 使用時のバックグラウンド実行には不具合らしき挙動が報告されているため、必ずフォアグラウンドで実行する。
+`ask-pipeline.sh` を Bash ツールでフォアグラウンド実行する。長時間化する可能性があるため、Bash の timeout は最大値に設定する。agent 使用時のバックグラウンド実行には不具合らしき挙動が報告されているため、必ずフォアグラウンドで実行する。
 
 ### 4. run スクリプト解決
 
-`ask-pipeline.sh` は `--skill <name>` から `${SHARED_BIN}/../<name>/bin/run-<name>.sh` を解決する。
+`ask-pipeline.sh` は `--agent <name>` から `${PLUGIN_ROOT}/agents/<name>.sh` を解決する。
 
 ### 5. バックエンド呼び出し
 
-| skill | バックエンド | コマンド形式 |
+| agent | バックエンド | コマンド形式 |
 |-------|------------|------------|
-| `codex-ask` / `codex-review` | OpenAI Codex CLI | `codex exec [resume <ID>] --full-auto --json -o <out> -` |
+| `codex-ask` / `codex-review` | OpenAI Codex CLI | `codex --ask-for-approval never exec --sandbox read-only --full-auto --json [resume <ID>] -o <out> -` |
 | `opus-ask` / `opus-review` | Claude Code CLI | `claude -p --output-format json --model Opus [--resume <ID>] --dangerously-skip-permissions --tools <...>` |
 
 ### 6. 中間 JSON 生成
 
-`run-<skill>.sh` は実行結果を JSON として保存する（スキーマは [log-format.md](log-format.md) 参照）。エラー時もエラー内容を含む JSON を生成し、stdout にパスを出力する。
+`agents/<name>.sh` は実行結果を JSON として保存する（スキーマは [log-format.md](log-format.md) 参照）。エラー時もエラー内容を含む JSON を生成し、stdout にパスを出力する。
 
 ### 7. 翻訳
 
@@ -93,7 +93,7 @@ Markdown ログが生成できた場合、元 JSON と翻訳後 JSON を削除�
 
 ### 11. 親への返却
 
-fork セッションは stdout 最終行から Markdown ログのパスを取得し、親に返す。
+subagent は stdout 最終行から Markdown ログのパスを取得し、親に返す。
 
 - ask 系：`ログファイル: <LOG_PATH>` をそのまま返す
 - review 系：「レビューログを読んでユーザに結果を返してください」という指示テンプレートを返す（親が Markdown を読んでユーザーに整形提示する）
@@ -104,7 +104,7 @@ fork セッションは stdout 最終行から Markdown ログのパスを取得
 
 | 失敗箇所 | 動作 |
 |---------|------|
-| `run-<skill>.sh` 自体の起動失敗 | パイプライン中断、exit 1 |
+| `agents/<name>.sh` 自体の起動失敗 | パイプライン中断、exit 1 |
 | バックエンド実行失敗 | エラー JSON 生成、`status: error` で続行 |
 | 翻訳失敗 | WARN を出して原文 JSON のまま続行 |
 | Markdown 化失敗 | パイプライン中断、exit 1 |

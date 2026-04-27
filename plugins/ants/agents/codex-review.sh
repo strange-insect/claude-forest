@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# run-codex-review.sh
+# codex-review.sh
 # Codex を使ってコードレビューを実行し、結果を JSON ファイルに保存してパスを返す
 #
 # 使い方:
-#   run-codex-review.sh [--session-id UUID] --message "レビュー指示"
-#   run-codex-review.sh [--session-id UUID] <<'EOF'
+#   codex-review.sh [--session-id UUID] --message "レビュー指示"
+#   codex-review.sh [--session-id UUID] <<'EOF'
 #   レビュー指示（複数行可）
 #   EOF
 #
@@ -39,21 +39,35 @@ done
 [[ -z "$MESSAGE" ]] && MESSAGE=$(cat)
 [[ -z "$MESSAGE" ]] && { echo "ERROR: --message または stdin でメッセージを指定してください" >&2; exit 1; }
 
+# --- 新規 / 継続 ---
+MODE=$([[ -n "$SESSION_ID" ]] && echo "continuation" || echo "new")
+
 # --- 保存ディレクトリ ---
+# JSON は /tmp/<model>-ask/ に集約する（review/ask 共通。save-ask-log.sh の
+# SAVE_DIR=/tmp/${MODEL}-ask ロジックと整合させるため codex-review もここに置く）
+# 共用ホストでの覗き見防止のため SAVE_DIR を 0700 で作る。
+# install -d は既存ディレクトリにも chmod を適用するため、移行前に作られた 0755 のディレクトリも矯正される
 SAVE_DIR="${TMPDIR:-/tmp}/codex-ask"
-mkdir -p "$SAVE_DIR"
+install -d -m 700 "$SAVE_DIR"
 
 # --- JSON ファイルパス ---
-TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
+# 並列起動時の衝突回避のためミリ秒精度のタイムスタンプを使用
+TIMESTAMP=$(date '+%Y%m%d_%H%M%S_%3N')
 PROJECT=$(basename "$(pwd)")
-JSON_FILE="${SAVE_DIR}/codex-review_${PROJECT}_${TIMESTAMP}.json"
+JSON_FILE="${SAVE_DIR}/${TIMESTAMP}_${PROJECT}_codex-review.json"
 
 # --- 一時ファイル ---
 TMP_JSONL=$(mktemp /tmp/codex-review-jsonl-XXXXXX)
 TMP_MSG=$(mktemp  /tmp/codex-review-msg-XXXXXX)
 TMP_STDERR=$(mktemp /tmp/codex-review-err-XXXXXX)
 
-cleanup() { rm -f "$TMP_JSONL" "$TMP_MSG" "$TMP_STDERR"; }
+# save_json 到達前に死んだ場合に空の JSON_FILE がゴミとして残らないよう、
+# 完全な書き込みが終わった後にだけ JSON_FILE を保持するフラグ
+JSON_FILE_KEEP=0
+cleanup() {
+  rm -f "$TMP_JSONL" "$TMP_MSG" "$TMP_STDERR"
+  [[ "$JSON_FILE_KEEP" -eq 0 ]] && rm -f "$JSON_FILE"
+}
 trap cleanup EXIT
 
 # --- session_id 抽出ヘルパー ---
@@ -71,7 +85,8 @@ extract_session_id() {
 save_json() {
   local session_id="$1" answer="$2" status="$3" exit_code="$4"
 
-  jq -n \
+  # JSON 本体も他ユーザから読まれないよう umask 077 をサブシェル内で適用
+  (umask 077 && jq -n \
     --arg  model      "codex" \
     --arg  type       "review" \
     --arg  mode       "$MODE" \
@@ -79,7 +94,7 @@ save_json() {
     --arg  timestamp  "$(date '+%Y-%m-%d %H:%M:%S')" \
     --arg  directory  "$(pwd)" \
     --arg  project    "$PROJECT" \
-    --arg  message    "$MESSAGE" \
+    --arg  message    "$PROMPT" \
     --arg  answer     "$answer" \
     --arg  status     "$status" \
     --argjson exit_code "$exit_code" \
@@ -95,15 +110,16 @@ save_json() {
       answer:     $answer,
       status:     $status,
       exit_code:  $exit_code
-    }' > "$JSON_FILE"
+    }' > "$JSON_FILE")
 
+  JSON_FILE_KEEP=1
   printf '%s\n' "$JSON_FILE"
 }
 
 # --- プロンプト構築 ---
 # 新規レビュー時のみ固定プロンプトを先頭に付加する
 if [[ -z "$SESSION_ID" ]]; then
-  FIXED_PROMPT='あなたはコードレビューを担当するシニアエンジニアです。
+  FIXED_PROMPT='コードレビューを実施してください。
 コードの修正は一切行わず、レビューコメントの出力のみを行ってください。
 ファイルの読み取りは許可されていますが、書き込みは行わないでください。
 
@@ -111,9 +127,9 @@ if [[ -z "$SESSION_ID" ]]; then
 - 問題の深刻度を示すこと（Critical / Warning / Info / Suggestion）
 - ファイルパスと行番号を明記すること
 - 修正案がある場合は具体的なコード例を含めること（実際の修正はしない）
+- 変更差分だけでなく、変更箇所の周辺コードも読み、以下を幅広く・深くレビューすること
 
-【レビュー観点（デフォルト）】
-変更差分だけでなく、変更箇所の周辺コードも読み、以下を幅広く・深くレビューすること:
+【標準的なレビュー観点】
 
 1. **正確性・ロジック**: バグ、エッジケース、境界値、競合状態
 2. **セキュリティ**: インジェクション、認証・認可漏れ、機密情報の露出
@@ -124,28 +140,26 @@ if [[ -z "$SESSION_ID" ]]; then
 7. **データライフサイクル**: 同じデータを参照・更新する機能との不整合
 8. **テスト網羅性**: 追加・変更したロジックに対応するテストが存在するか
 9. **保守性**: 命名、重複、抽象化の適切さ
-10. **パフォーマンス**: 不要な計算・I/O・メモリ使用'
-  PROMPT="${FIXED_PROMPT}
+10. **パフォーマンス**: 不要な計算・I/O・メモリ使用
 
-${MESSAGE}"
+【ユーザからの指示文】
+'
+  PROMPT="${FIXED_PROMPT}${MESSAGE}"
 else
   PROMPT="$MESSAGE"
 fi
 
-# --- 新規 / 継続 ---
-MODE=$([[ -n "$SESSION_ID" ]] && echo "continuation" || echo "new")
-
 # --- Codex 実行 ---
 EXIT_CODE=0
+CODEX_OPTIONS=(--skip-git-repo-check --sandbox read-only --full-auto --json)
 
 if [[ -n "$SESSION_ID" ]]; then
-  echo "$PROMPT" | codex exec resume "$SESSION_ID" --full-auto --json -o "$TMP_MSG" - \
+  printf '%s\n' "$PROMPT" | codex --ask-for-approval never exec "${CODEX_OPTIONS[@]}" resume "$SESSION_ID" -o "$TMP_MSG" - \
     >"$TMP_JSONL" 2>"$TMP_STDERR" || EXIT_CODE=$?
-  NEW_ID=$(extract_session_id "$TMP_JSONL")
-  EXTRACTED_SESSION_ID="${NEW_ID:-unresolved}"
+  EXTRACTED_SESSION_ID=$(extract_session_id "$TMP_JSONL")
   [[ "$EXTRACTED_SESSION_ID" == "unresolved" ]] && EXTRACTED_SESSION_ID="$SESSION_ID"
 else
-  echo "$PROMPT" | codex exec --full-auto --json -o "$TMP_MSG" - \
+  printf '%s\n' "$PROMPT" | codex --ask-for-approval never exec "${CODEX_OPTIONS[@]}" -o "$TMP_MSG" - \
     >"$TMP_JSONL" 2>"$TMP_STDERR" || EXIT_CODE=$?
   EXTRACTED_SESSION_ID=$(extract_session_id "$TMP_JSONL")
 fi
@@ -165,7 +179,14 @@ $(cat "$TMP_STDERR")"
 部分的な出力:
 $(cat "$TMP_MSG")"
   fi
-  save_json "${SESSION_ID:-unresolved}" "$ERROR_OUTPUT" "error" "$EXIT_CODE"
+  # エラー時でも extract_session_id 済みの ID があれば残す（新規セッションで thread.started
+  # 取得後に失敗した場合の障害調査・リトライ導線を切らないため）
+  if [[ -n "$EXTRACTED_SESSION_ID" && "$EXTRACTED_SESSION_ID" != "unresolved" ]]; then
+    session_for_log="$EXTRACTED_SESSION_ID"
+  else
+    session_for_log="${SESSION_ID:-unresolved}"
+  fi
+  save_json "$session_for_log" "$ERROR_OUTPUT" "error" "$EXIT_CODE"
   exit 1
 fi
 

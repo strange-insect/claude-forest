@@ -1,55 +1,62 @@
 # セキュリティと権限
 
-ants のスキル・スクリプトが扱う権限と、信頼できない入力に対する取り扱いをまとめる。
+ants の agent / skill / スクリプトが扱う権限と、信頼できない入力に対する取り扱いをまとめる。
 
-## allowed-tools の方針
+## tools の方針
 
-各スキルの SKILL.md では、必要最小限のツールのみを `allowed-tools` として宣言する。
+各 agent / skill の定義ファイルでは、必要最小限のツールのみを宣言する（agent は `tools` フィールド、skill は `allowed-tools` フィールド）。
 
-| スキル | allowed-tools | 補足 |
-|-------|--------------|------|
+### Agent 一覧
+
+| agent | 宣言ツール | 補足 |
+|-------|-----------|------|
 | `codex-ask` / `codex-review` | `Bash` | パイプライン起動のみ |
 | `opus-ask` / `opus-review` | `Bash` | 同上 |
 | `get-pr-info` | `Bash` | `gh` コマンド呼び出し |
 | `export-session` | `Bash` | `python3` 呼び出し |
 | `plant-uml` | `Bash, Read` | スクリプト呼び出し + 入力ファイル読み |
+
+### Skill 一覧
+
+| skill | 宣言ツール | 補足 |
+|-------|-----------|------|
 | `create-pr` | `Bash, Read, Glob` | テンプレート探索・本文生成 |
 | `create-skill` | `Read, Write, Bash, Glob, Grep, Edit` | SKILL.md 生成 |
 
-## バックエンド側のツール制限
+## バックエンド側の built-in ツールセット
 
-`*-ask` / `*-review` のバックエンド（`run-*.sh`）では、`claude -p` / `codex exec` の起動方法に応じて許可範囲が異なる。
+`*-ask` / `*-review` のバックエンド（`agents/<name>.sh`）では、`claude -p` / `codex exec` の起動方法に応じて利用可能な built-in ツールセットが異なる。Claude Code CLI の `--tools` は **利用可能な built-in ツールセット** を限定する（permission の許可リストを意味する `--allowed-tools` とは別）。
 
 | スクリプト | 制限方式 | 備考 |
 |----------|---------|------|
-| `run-codex-ask.sh` | Codex CLI の `--full-auto` 実行。CLI レベルの `--tools` 制限はなく、書き込み禁止はプロンプトで指示する | 信頼できないリポジトリでは注意 |
-| `run-codex-review.sh` | 同上。固定プロンプトで「修正禁止」を加えて指示する | 同上 |
-| `run-opus-ask.sh` | `claude -p --tools "Read, Glob, Grep, Bash, WebSearch, WebFetch"`（Write/Edit を除外） | CLI レベルで許可ツールを限定 |
-| `run-opus-review.sh` | `claude -p --tools "Read, Glob, Grep, Bash"`（Write/Edit/Web を除外、手元コード集中） | 同上 |
+| `codex-ask.sh` | `codex --ask-for-approval never exec --sandbox read-only --full-auto --json` で実行。書き込み禁止は CLI 側 `--sandbox read-only` で担保する（少なくとも model-generated shell command による書き込みは拒否される。公式 help の保証範囲はそこまで） | プロンプトでのガード文は付けない |
+| `codex-review.sh` | 同上。新規セッション時のみ固定プロンプトでレビュー出力ルール・10 観点・「修正禁止」の振る舞いを指示する | プロンプト側のガードは振る舞い指示のみで、書き込み制御は CLI 任せ |
+| `opus-ask.sh` | `claude -p --tools "Read,Glob,Grep,Bash,WebSearch,WebFetch"` で起動。`Write`/`Edit` を built-in ツールセットから除外する | `Bash` を許可しているため、`bash -c 'cat > file'` 経由の書き込みは可能。信頼できないリポジトリでは使用しない |
+| `opus-review.sh` | `claude -p --tools "Read,Glob,Grep,Bash"` で起動。`Write`/`Edit`/`WebSearch`/`WebFetch` を built-in ツールセットから除外する（手元コード集中） | 同上の `Bash` 経由の書き込みリスクあり |
 
 ## --dangerously-skip-permissions の取り扱い
 
-`run-opus-ask.sh` / `run-opus-review.sh` / `translate-json.sh` は `claude -p --dangerously-skip-permissions` を使用する。
+`opus-ask.sh` / `opus-review.sh` / `translate-json.sh` は `claude -p --dangerously-skip-permissions` を使用する。
 
 ### 使用理由
 
-- fork セッションでユーザーに権限プロンプトを出せないため
+- subagent でユーザーに権限プロンプトを出せないため
 - パイプライン全体を非対話で完走させる必要があるため
 
 ### リスク
 
 - 信頼できない入力（リポジトリ内の悪意あるファイル、外部 PR 本文など）に含まれる指示が、許可されたツール経由で副作用を持つ可能性
-- 特に `Bash` を許可している `run-opus-review.sh` ではプロンプトインジェクションのリスクがある
+- 特に `Bash` を許可している `opus-review.sh` ではプロンプトインジェクションのリスクがある
 
 ### 軽減策
 
-- 許可ツールを必要最小限に絞る（`Write`/`Edit` を意図的に除外）
+- built-in ツールセットを必要最小限に絞る（`Write`/`Edit` を意図的に除外）。ただし `Bash` 経由の書き込みまでは塞げない
 - レビュー系では「コードの修正は行わない」固定プロンプトを冒頭に付加
 - 信頼できないリポジトリでの実行は避ける（README の「既知の問題」にも明記）
 
 ## CLAUDECODE 環境変数の扱い
 
-ネスト呼び出し（Claude Code 内から `claude -p` を呼ぶ）時の不整合を避けるため、`run-opus-*.sh` / `translate-json.sh` は実行前に以下を unset する：
+ネスト呼び出し（Claude Code 内から `claude -p` を呼ぶ）時の不整合を避けるため、`opus-*.sh` / `translate-json.sh` は実行前に以下を unset する：
 
 ```bash
 unset CLAUDECODE CLAUDE_CODE_ENTRYPOINT 2>/dev/null || true
@@ -74,4 +81,4 @@ ask パイプラインの最終出力（Markdown ログ）はリポジトリ配�
 
 - [ask-pipeline-flow.md](ask-pipeline-flow.md) — パイプライン全体
 - [shellscripts/translate-json.md](../shellscripts/translate-json.md) — 翻訳の詳細
-- [skills/opus-review.md](../skills/opus-review.md) — `Bash` 許可によるリスク
+- [agents/opus-review.md](../agents/opus-review.md) — `Bash` 許可によるリスク

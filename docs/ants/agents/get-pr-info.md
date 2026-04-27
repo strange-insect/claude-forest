@@ -1,4 +1,4 @@
-# get-pr-info スキル仕様書
+# get-pr-info agent 仕様書
 
 GitHub PR の情報（概要・会話・レビュー・行コメント・コミット・差分）を取得して Markdown にまとめ、`/tmp/pull-requests/` 配下に保存する。
 
@@ -6,9 +6,9 @@ GitHub PR の情報（概要・会話・レビュー・行コメント・コミ�
 
 | 項目 | 値 |
 |-----|-----|
-| スキル名 | `get-pr-info` |
-| 呼び出し方式 | `/ants:get-pr-info pr_number=<PR_NUMBER> [repository=<ORG/REPO>]` |
-| 実行コンテキスト | `context: fork`（子セッションで実行） |
+| agent 名 | `get-pr-info` |
+| 呼び出しプロンプト形式 | `pr_number=<PR_NUMBER> [repository=<ORG/REPO>]` |
+| 実行コンテキスト | subagent として独立コンテキストで実行 |
 | 使用モデル | `haiku` |
 | 結果 | 保存先 Markdown ファイルのパスを親セッションに返す |
 
@@ -29,8 +29,8 @@ GitHub PR の情報（概要・会話・レビュー・行コメント・コミ�
 
 ## 処理フロー
 
-1. `ARGUMENTS` から `pr_number` と `repository` を抽出
-2. `${CLAUDE_PLUGIN_ROOT}/skills/get-pr-info/bin/run-get-pr-info.sh pr_number=<...> [repository=<...>]` を実行
+1. 呼び出し prompt から `pr_number` と `repository` を抽出
+2. `${CLAUDE_PLUGIN_ROOT}/agents/get-pr-info.sh pr_number=<...> [repository=<...>]` を実行
 3. スクリプトの stdout（保存先パス）をそのまま親セッションに返す
 
 Markdown 本文は親セッションには展開せず、必要があれば呼び出し側が `Read` ツールでファイルを開く。

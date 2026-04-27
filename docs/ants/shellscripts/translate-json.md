@@ -5,7 +5,7 @@ JSON ファイルの指定フィールドを Haiku モデルに翻訳させ、`.
 ## 配置
 
 ```
-plugins/ants/skills/_shared-bin/translate-json.sh
+plugins/ants/bin/translate-json.sh
 ```
 
 ## 呼び出し方

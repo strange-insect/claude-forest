@@ -1,6 +1,6 @@
 # セッション継続
 
-ants の `*-ask` / `*-review` スキルが、別セッションの AI（Codex / Opus）と複数ターンの会話を続けるためのメカニズム。
+ants の `*-ask` / `*-review` agent が、別セッションの AI（Codex / Opus）と複数ターンの会話を続けるためのメカニズム。
 
 ## 基本方針
 
@@ -8,20 +8,20 @@ ants の `*-ask` / `*-review` スキルが、別セッションの AI（Codex / 
 
 ## 取得元
 
-各スキルの初回（`session_id` 指定なし）実行時、バックエンドから生成された UUID を中間 JSON の `session_id` フィールドに記録する。
+各 agent の初回（`session_id` 指定なし）実行時、バックエンドから生成された UUID を中間 JSON の `session_id` フィールドに記録する。
 最終 Markdown ログには「セッションID」として表示される。
 
 ## 受け渡し
 
 ```
 1. 初回呼び出し
-   /ants:codex-ask 質問テキスト
+   親セッションの LLM が Agent ツール経由で codex-ask を起動（prompt: "質問テキスト"）
    → Markdown ログに セッションID: 12345... が記録される
 
 2. ユーザーがログを確認
 
 3. 継続呼び出し
-   /ants:codex-ask session_id=12345... 追加の質問
+   親セッションの LLM が Agent ツール経由で codex-ask を起動（prompt: "session_id=12345... 追加の質問"）
    → 同じセッションの続きとして実行される
 ```
 
@@ -31,10 +31,10 @@ ants の `*-ask` / `*-review` スキルが、別セッションの AI（Codex / 
 
 ```bash
 # 初回
-codex exec --full-auto --json -o <out> -
+codex --ask-for-approval never exec --skip-git-repo-check --sandbox read-only --full-auto --json -o <out> -
 
-# 継続
-codex exec resume <SESSION_ID> --full-auto --json -o <out> -
+# 継続（exec オプションは resume サブコマンドの前に置く）
+codex --ask-for-approval never exec --skip-git-repo-check --sandbox read-only --full-auto --json resume <SESSION_ID> -o <out> -
 ```
 
 セッション ID は JSONL 出力から以下で抽出する：
@@ -75,7 +75,7 @@ claude -p --output-format json --model Opus --resume <SESSION_ID> ...
 
 ## レビュー系の固定プロンプト
 
-`*-review` スキルでは、新規セッション時のみ固定プロンプト（出力ルール・デフォルト 10 観点・修正禁止）を冒頭に付加する。継続セッションでは付加しない（バックエンド側に既に文脈が残っているため）。
+`*-review` agent では、新規セッション時のみ固定プロンプト（出力ルール・デフォルト 10 観点・修正禁止）を冒頭に付加する。継続セッションでは付加しない（バックエンド側に既に文脈が残っているため）。
 
 これにより、継続レビューでは既存の会話脈を維持したまま追質問できる。
 

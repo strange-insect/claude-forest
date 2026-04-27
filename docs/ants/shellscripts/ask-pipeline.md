@@ -1,21 +1,21 @@
 # ask-pipeline.sh 仕様書
 
-`*-ask` / `*-review` の 4 スキルが共通で使う処理パイプラインの入口。各スキルの `run-<skill>.sh` を呼び出し、
+`*-ask` / `*-review` の 4 agent が共通で使う処理パイプラインの入口。各 agent の `agents/<name>.sh` を呼び出し、
 翻訳・Markdown 化・出力ディレクトリへのコピーまでを一貫して実行する。
 
 ## 配置
 
 ```
-plugins/ants/skills/_shared-bin/ask-pipeline.sh
+plugins/ants/bin/ask-pipeline.sh
 ```
 
 ## 呼び出し方
 
 ```bash
-ask-pipeline.sh --skill <name> [--session-id UUID] [--output-dir PATH] --message "テキスト"
+ask-pipeline.sh --agent <name> [--session-id UUID] [--output-dir PATH] --message "テキスト"
 
 # stdin で渡す場合
-ask-pipeline.sh --skill <name> [--session-id UUID] [--output-dir PATH] <<'EOF'
+ask-pipeline.sh --agent <name> [--session-id UUID] [--output-dir PATH] <<'EOF'
 質問テキスト（複数行可）
 EOF
 ```
@@ -24,7 +24,7 @@ EOF
 
 | 引数 | 説明 | 必須 |
 |-----|------|-----|
-| `--skill <name>` | 対応するスキル名（`codex-ask` / `codex-review` / `opus-ask` / `opus-review`） | 必須 |
+| `--agent <name>` | 対応する agent 名（`codex-ask` / `codex-review` / `opus-ask` / `opus-review`） | 必須 |
 | `--session-id <UUID>` | セッション継続用 UUID | 任意 |
 | `--output-dir <path>` | Markdown ログのコピー先 | 任意（デフォルト：`<repo>/.llm-ask`） |
 | `--message <text>` | メッセージ本文 | `--message` または stdin のいずれか必須 |
@@ -39,16 +39,16 @@ stdout の最終行に、コピー先 Markdown ログの絶対パスを出力す
 | コード | 意味 |
 |-------|------|
 | 0 | 成功 |
-| 1 | エラー（不明オプション、メッセージ未指定、`run-<skill>.sh` の不在、各ステップの致命的失敗） |
+| 1 | エラー（不明オプション、メッセージ未指定、`agents/<name>.sh` の不在、各ステップの致命的失敗） |
 
-`run-<skill>.sh` 自体が異常終了した場合、エラー内容を含む JSON / Markdown ログは生成された上で、最終的な exit code に伝搬する。
+`agents/<name>.sh` 自体が異常終了した場合、エラー内容を含む JSON / Markdown ログは生成された上で、最終的な exit code に伝搬する。
 
 ## 処理フロー
 
-1. **引数パース**：`--skill` / `--message` / `--session-id` / `--output-dir` を解釈
+1. **引数パース**：`--agent` / `--message` / `--session-id` / `--output-dir` を解釈
 2. **メッセージ取得**：`--message` 未指定なら stdin から読む。空ならエラー
-3. **run スクリプト解決**：`${SHARED_BIN}/../<skill>/bin/run-<skill>.sh` の存在・実行可能性を確認
-4. **run スクリプト実行**：`run-<skill>.sh --message <...> [--session-id <...>]` を実行し、JSON ファイルパスを取得
+3. **run スクリプト解決**：`${PLUGIN_ROOT}/agents/<name>.sh` の存在・実行可能性を確認
+4. **run スクリプト実行**：`agents/<name>.sh --message <...> [--session-id <...>]` を実行し、JSON ファイルパスを取得
 5. **翻訳**：`translate-json.sh <JSON> answer` で `answer` フィールドを翻訳。失敗時は WARN を出して原文のまま続行
 6. **Markdown 化**：`save-ask-log.sh <JSON>` で Markdown ログに変換し、パスを取得
 7. **中間 JSON の削除**：Markdown が生成できた場合、元 JSON と翻訳後 JSON を削除
@@ -69,16 +69,16 @@ stdout の最終行に、コピー先 Markdown ログの絶対パスを出力す
 
 ## エラー時の伝搬
 
-`run-<skill>.sh` の exit code は `PIPELINE_EXIT` に保持され、最終的に exit に使われる。
+`agents/<name>.sh` の exit code は `PIPELINE_EXIT` に保持され、最終的に exit に使われる。
 途中ステップが失敗してもエラー内容を含む JSON / Markdown が極力残るよう、各ステップの exit code は個別に捕捉する。
 
 ## 依存スクリプト
 
 | スクリプト | 用途 |
 |----------|------|
-| `<skill>/bin/run-<skill>.sh` | スキル本体実行 |
-| `_shared-bin/translate-json.sh` | 翻訳 |
-| `_shared-bin/save-ask-log.sh` | Markdown 化 |
+| `agents/<name>.sh` | agent 本体実行 |
+| `bin/translate-json.sh` | 翻訳 |
+| `bin/save-ask-log.sh` | Markdown 化 |
 
 ## 依存コマンド
 
@@ -86,7 +86,7 @@ stdout の最終行に、コピー先 Markdown ログの絶対パスを出力す
 |---------|------|
 | `git` | リポジトリルート取得（任意） |
 
-`run-<skill>.sh` / `translate-json.sh` / `save-ask-log.sh` の依存はそれぞれの仕様書を参照。
+`agents/<name>.sh` / `translate-json.sh` / `save-ask-log.sh` の依存はそれぞれの仕様書を参照。
 
 ## 関連ドキュメント
 

@@ -1,4 +1,4 @@
-# export-session スキル仕様書
+# export-session agent 仕様書
 
 Claude Code のセッション会話全文を Markdown ファイルにエクスポートする。
 
@@ -6,9 +6,9 @@ Claude Code のセッション会話全文を Markdown ファイルにエクス�
 
 | 項目 | 値 |
 |-----|-----|
-| スキル名 | `export-session` |
-| 呼び出し方式 | `/ants:export-session session_id=<UUID>` または `/ants:export-session list [--cwd]` |
-| 実行コンテキスト | `context: fork`（子セッションで実行） |
+| agent 名 | `export-session` |
+| 呼び出しプロンプト形式 | `session_id=<UUID>` または `list [--cwd]` |
+| 実行コンテキスト | subagent として独立コンテキストで実行 |
 | 使用モデル | `haiku` |
 | 結果 | スクリプトの stdout（ファイルパスとサイズ）をそのままユーザーに返す |
 
@@ -22,7 +22,7 @@ Claude Code のセッション会話全文を Markdown ファイルにエクス�
 
 ## 入力引数
 
-`ARGUMENTS` の文字列を以下の順で判定する。
+呼び出し prompt の文字列を以下の順で判定する。
 
 1. `list` を含む → セッション一覧を表示。`--cwd` があればカレントディレクトリのセッションのみに絞る
 2. `session_id=<UUID>` の形式で UUID らしき文字列を含む → その UUID のセッションを Markdown 化
@@ -30,10 +30,10 @@ Claude Code のセッション会話全文を Markdown ファイルにエクス�
 
 ## 処理フロー
 
-1. `ARGUMENTS` を判定し、第 1 引数（`<TARGET>`）を決定
+1. 呼び出し prompt を判定し、第 1 引数（`<TARGET>`）を決定
 2. 以下のコマンドを 1 回だけ実行：
    ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/export_session.py" <TARGET> [--cwd]
+   python3 "${CLAUDE_PLUGIN_ROOT}/agents/export-session.py" <TARGET> [--cwd]
    ```
 3. スクリプトの stdout をそのまま返す（Markdown 本文の展開・要約はしない）
 
@@ -65,7 +65,7 @@ Assistant ターンの見出しには、そのターンで応答したモデル�
 ## 制約
 
 - ファイルの読み取り・編集は行わない
-- 出力の Markdown 本文をスキル側で解釈・要約しない（フォーマットを壊さないため）
+- 出力の Markdown 本文をagent 側で解釈・要約しない（フォーマットを壊さないため）
 
 ## 依存コマンド
 

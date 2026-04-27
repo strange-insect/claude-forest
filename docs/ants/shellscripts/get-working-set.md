@@ -5,7 +5,7 @@
 ## 配置
 
 ```
-plugins/ants/skills/_shared-bin/get-working-set.sh
+plugins/ants/bin/get-working-set.sh
 ```
 
 ## 呼び出し方
@@ -43,8 +43,7 @@ docs/new.md
 
 ## 利用元
 
-- [codex-review](../skills/codex-review.md) — 新規レビュー時にレビュー対象未指定の場合のフォールバック
-- [opus-review](../skills/opus-review.md) — 同上
+review agent (`codex-review` / `opus-review`) を呼ぶ側の LLM が、レビュー指示を組み立てるときの補助ユーティリティとして使える。ワーキングツリーに変更があるかの判定や、変更ファイル一覧をレビュー指示文に含める用途。agent 自身は呼ばない（agent は `<レビュー指示>` を解釈せずそのまま `ask-pipeline.sh` に渡す）。
 
 ## 依存コマンド
 

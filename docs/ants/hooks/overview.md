@@ -4,7 +4,7 @@ ants は Claude Code の hook メカニズムを使用してセッション開�
 
 ## 目的
 
-ants の一部スキル（`export-session` など）は現在のセッション ID を必要とする。Claude Code の `SessionStart` フックで `session_id` を環境変数化することで、後続のスキル呼び出しから参照できるようにする。
+ants の一部 agent（`export-session` など）は現在のセッション ID を必要とする。Claude Code の `SessionStart` フックで `session_id` を環境変数化することで、後続の呼び出しから参照できるようにする。
 
 ## Hook の種類と実行タイミング
 
@@ -39,7 +39,7 @@ if [[ -n "$SESSION_ID" && -n "${CLAUDE_ENV_FILE:-}" ]]; then
 fi
 ```
 
-`CLAUDE_ENV_FILE` は Claude Code が用意する環境変数の永続化先。書き込まれた値は以後のスキル実行で `${CLAUDE_SESSION_ID}` として参照できる。
+`CLAUDE_ENV_FILE` は Claude Code が用意する環境変数の永続化先。書き込まれた値は以後の agent / skill 実行で `${CLAUDE_SESSION_ID}` として参照できる。
 
 ## Hook 失敗時の動作
 
@@ -51,7 +51,7 @@ fi
 | `CLAUDE_ENV_FILE` が未設定 | 何もせず exit 0 |
 | `jq` 未インストール | スクリプトが中断、exit 0 で終わらず非ゼロ終了の可能性あり |
 
-`jq` の有無は SessionStart で検証していないため、未インストール環境では他の依存スキルが呼び出された時点でエラーになる。
+`jq` の有無は SessionStart で検証していないため、未インストール環境では他の依存先が呼び出された時点でエラーになる。
 
 ## `CLAUDE_SESSION_ID` のライフサイクル
 
@@ -62,19 +62,19 @@ fi
 | Claude Code 起動（新規セッション） | 新しい session_id が設定される |
 | Claude Code 再起動 | 再起動時に SessionStart が再発火し、新しい session_id が設定される |
 | `/compact` 実行 | 値は引き継がれる（compact が発生してもセッション ID は変わらない） |
-| Skill の fork セッション | 値は引き継がれない（fork セッションは別 session_id で動くため、`CLAUDE_SESSION_ID` を参照しても親セッションの ID は得られない） |
+| subagent の独立コンテキスト | 値は引き継がれない（subagent は別 session_id で動くため、`CLAUDE_SESSION_ID` を参照しても親セッションの ID は得られない） |
 
-### fork セッションでの取り扱い
+### subagent での取り扱い
 
-`context: fork` で動くスキル（`export-session` など）から親セッションの ID を扱いたい場合は、親セッションが `CLAUDE_SESSION_ID` を読み取って引数として明示的に渡す必要がある。fork セッション側で `$CLAUDE_SESSION_ID` を参照しても、それは fork セッション自体の ID（または未定義）になる。
+subagent として動く agent（`export-session` など）から親セッションの ID を扱いたい場合は、親セッションが `CLAUDE_SESSION_ID` を読み取って prompt 引数として明示的に渡す必要がある。subagent 側で `$CLAUDE_SESSION_ID` を参照しても、それは subagent 自体の ID（または未定義）になる。
 
-例：`export-session` の SKILL.md は親セッションに対して「現在のセッションIDは `CLAUDE_SESSION_ID` 環境変数から取得し `session_id=` に指定すること」と指示している。これは、親セッションが値を解決してから fork セッションへ引数で渡す前提による。
+例：`export-session` の agents/export-session.md は親セッションに対して「現在のセッションIDは `CLAUDE_SESSION_ID` 環境変数から取得し `session_id=` に指定すること」と指示している。これは、親セッションが値を解決してから subagent へ prompt 引数で渡す前提による。
 
 ## 利用先
 
-`CLAUDE_SESSION_ID` を参照するスキルの代表：
+`CLAUDE_SESSION_ID` を参照する agent の代表：
 
-- [export-session](../skills/export-session.md) — `session_id=$CLAUDE_SESSION_ID` で現在セッションをエクスポート
+- [export-session](../agents/export-session.md) — `session_id=$CLAUDE_SESSION_ID` で現在セッションをエクスポート
 
 ## Hook の設計理由
 
@@ -90,9 +90,9 @@ fi
 
 セッション ID を毎回引数で渡す代わりに環境変数化する理由：
 
-- 全スキルで共通に必要になる可能性がある情報を、呼び出し側の負担なく参照できる
+- 全 agent / skill で共通に必要になる可能性がある情報を、呼び出し側の負担なく参照できる
 - ユーザーが `$CLAUDE_SESSION_ID` を手動入力する手間を省く
 
 ## 関連ドキュメント
 
-- [skills/export-session.md](../skills/export-session.md) — `CLAUDE_SESSION_ID` を利用するスキル
+- [agents/export-session.md](../agents/export-session.md) — `CLAUDE_SESSION_ID` を利用する agent

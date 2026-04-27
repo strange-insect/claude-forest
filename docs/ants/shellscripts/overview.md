@@ -1,19 +1,19 @@
 # ants シェルスクリプト仕様書
 
-ants の主要な制御はシェルスクリプトで実装する。ただし `export-session` は `scripts/export_session.py` を使用し、`plant-uml` の補助スクリプトでも `python3` を使用する。
+ants の主要な制御はシェルスクリプトで実装する。ただし `export-session` は `agents/export-session.py` を使用し、`plant-uml` の補助スクリプトでも `python3` を使用する。
 
 スクリプトは 2 つに分類される。
 
-1. **`_shared-bin/` 配下の共有スクリプト**（4 個）：複数スキルから呼び出される共通処理
-2. **各スキルの `bin/` 配下スクリプト**：そのスキル専用の実装（各スキル仕様書を参照）
+1. **plugin root の `bin/` 配下の共有スクリプト**（4 個）：複数 agent から呼び出される共通処理
+2. **各 agent / skill 専用スクリプト**：その agent / skill 固有の実装（各仕様書を参照）
 
-このドキュメントは `_shared-bin/` 配下のみを対象とする。
+このドキュメントは plugin root の `bin/` 配下のみを対象とする。
 
 ## 共有スクリプト一覧
 
 | スクリプト名 | 用途 | 主な利用元 |
 |-------------|------|-----------|
-| `ask-pipeline.sh` | ask 系スキルの共通パイプライン入口 | `codex-ask`, `codex-review`, `opus-ask`, `opus-review` |
+| `ask-pipeline.sh` | ask 系 agent の共通パイプライン入口 | `codex-ask`, `codex-review`, `opus-ask`, `opus-review` |
 | `save-ask-log.sh` | 中間 JSON を Markdown ログに変換 | `ask-pipeline.sh` |
 | `translate-json.sh` | JSON 内の指定フィールドを翻訳 | `ask-pipeline.sh` |
 | `get-working-set.sh` | ワーキングセット（git 変更）を取得 | `codex-review`, `opus-review` |
@@ -21,7 +21,7 @@ ants の主要な制御はシェルスクリプトで実装する。ただし `e
 ## 共通方針
 
 - **bash 前提**：先頭に `set -euo pipefail`（または互換）を付ける
-- **配置基準**：`${CLAUDE_PLUGIN_ROOT}/skills/_shared-bin/` 直下
+- **配置基準**：`${CLAUDE_PLUGIN_ROOT}/bin/` 直下
 - **入出力**：stdin / 引数で受け取り、stdout に結果を返す。エラーは stderr に出して非ゼロで終了
 - **副作用**：`/tmp` 配下の中間ファイルは原則として呼び出し側で削除する
 
@@ -34,16 +34,16 @@ ants の主要な制御はシェルスクリプトで実装する。ただし `e
 - [translate-json.sh](translate-json.md)
 - [get-working-set.sh](get-working-set.md)
 
-## スキル専用スクリプト
+## agent / skill 専用スクリプト
 
-`_shared-bin/` 以外のスクリプトは各スキル仕様書で扱う：
+plugin root の `bin/` 以外のスクリプトは各仕様書で扱う：
 
-| スクリプト | スキル仕様書 |
-|----------|------------|
-| `skills/codex-ask/bin/run-codex-ask.sh` | [codex-ask](../skills/codex-ask.md) |
-| `skills/codex-review/bin/run-codex-review.sh` | [codex-review](../skills/codex-review.md) |
-| `skills/opus-ask/bin/run-opus-ask.sh` | [opus-ask](../skills/opus-ask.md) |
-| `skills/opus-review/bin/run-opus-review.sh` | [opus-review](../skills/opus-review.md) |
-| `skills/get-pr-info/bin/run-get-pr-info.sh` | [get-pr-info](../skills/get-pr-info.md) |
-| `skills/plant-uml/bin/{generate_puml_url,decode_puml_url,md-convert}.sh` | [plant-uml](../skills/plant-uml.md) |
-| `scripts/export_session.py` | [export-session](../skills/export-session.md) |
+| スクリプト | 仕様書 |
+|----------|--------|
+| `agents/codex-ask.sh` | [codex-ask](../agents/codex-ask.md) |
+| `agents/codex-review.sh` | [codex-review](../agents/codex-review.md) |
+| `agents/opus-ask.sh` | [opus-ask](../agents/opus-ask.md) |
+| `agents/opus-review.sh` | [opus-review](../agents/opus-review.md) |
+| `agents/get-pr-info.sh` | [get-pr-info](../agents/get-pr-info.md) |
+| `agents/plant-uml/{generate_puml_url,decode_puml_url,md-convert}.sh` | [plant-uml](../agents/plant-uml.md) |
+| `agents/export-session.py` | [export-session](../agents/export-session.md) |

@@ -4,7 +4,7 @@ ask パイプラインの中間 JSON と最終 Markdown ログのスキーマを
 
 ## 中間 JSON
 
-`run-<skill>.sh` が生成し、`save-ask-log.sh` が読み込む共通スキーマ。
+`agents/<name>.sh` が生成し、`save-ask-log.sh` が読み込む共通スキーマ。
 
 ### スキーマ
 
@@ -29,13 +29,13 @@ ask パイプラインの中間 JSON と最終 Markdown ログのスキーマを
 | フィールド | 型 | 説明 |
 |----------|---|------|
 | `model` | string | `codex` または `opus`。バックエンドを表す |
-| `type` | string | `ask` または `review`。スキル種別を表す |
+| `type` | string | `ask` または `review`。agent 種別を表す |
 | `mode` | string | `new` または `continuation`。`session_id` 指定の有無で決まる |
 | `session_id` | string | バックエンドから抽出したセッション ID。失敗時は `unresolved` |
 | `timestamp` | string | JSON 生成時刻 |
-| `directory` | string | スキル実行時の絶対パス |
+| `directory` | string | agent 実行時の絶対パス |
 | `project` | string | `directory` の basename |
-| `message` | string | ユーザーが渡した指示文（review 時は固定プロンプトを除いた部分） |
+| `message` | string | バックエンドに実際に送信したプロンプト全体。review 系で新規セッション時には固定プロンプト（役割指示・出力ルール・10 観点）+ ユーザー指示文の連結が記録される（継続セッションではユーザー指示文のみ）。意図しない応答が返ってきた際の検証用に「システムが自動付与した部分」も含めて全文を保持する |
 | `answer` | string | バックエンドの回答。エラー時はエラー詳細を含むテキスト |
 | `status` | string | `success` または `error` |
 | `exit_code` | number | バックエンドの exit code |
@@ -75,7 +75,7 @@ ask パイプラインの中間 JSON と最終 Markdown ログのスキーマを
 ### レイアウト
 
 ```markdown
-# <Label> <Skill> Log
+# <Label> <Type> Log
 
 - **日時**: <timestamp>
 - **モード**: <mode>

@@ -1,11 +1,11 @@
 # save-ask-log.sh 仕様書
 
-`run-<skill>.sh` が生成する中間 JSON を、人間可読な Markdown ログに変換する。
+`agents/<name>.sh` が生成する中間 JSON を、人間可読な Markdown ログに変換する。
 
 ## 配置
 
 ```
-plugins/ants/skills/_shared-bin/save-ask-log.sh
+plugins/ants/bin/save-ask-log.sh
 ```
 
 ## 呼び出し方
@@ -46,7 +46,7 @@ stdout に、生成した Markdown ファイルの絶対パスを出力する。
 ## 生成される Markdown のレイアウト
 
 ```markdown
-# <Label> <Skill> Log
+# <Label> <Type> Log
 
 - **日時**: <timestamp>
 - **モード**: <mode>
