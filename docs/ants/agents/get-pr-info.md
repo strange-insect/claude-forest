@@ -70,4 +70,4 @@ Markdown 本文は親セッションには展開せず、必要があれば呼�
 
 ## 関連ドキュメント
 
-- [create-pr](create-pr.md) — PR の新規作成
+- [create-pr](../skills/create-pr.md) — PR の新規作成

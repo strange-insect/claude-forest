@@ -2,6 +2,7 @@
 name: create-pr
 description: >-
   GitHubプルリクエストを作成する。テンプレートに従いPR本文を生成し gh pr create で作成する。
+  ユーザーが「PR作って」「プルリク作って」のようにプルリクエストの作成を指示、または「create-pr」とSkill名を明示した場合に使用。
 
   argument: "[repository=<owner/repo>] [head=<branch>] [base=<branch>] [template=<ファイルパス>] [draft=<true|false>]"
 allowed-tools: Bash, Read, Glob
