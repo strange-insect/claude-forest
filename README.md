@@ -17,14 +17,12 @@ claude plugin marketplace list
 | プラグイン | 説明 |
 |-----------|------|
 | [ants](./plugins/ants/README.md) | よく使う機能の基本セット |
-| [silverfish](./plugins/silverfish/README.md) | 作業記録・タスク管理 |
 
 ## インストール
 
 ```bash
 # プラグインをインストール
 claude plugin install ants@claude-forest
-claude plugin install silverfish@claude-forest
 
 # インストール済みプラグインを確認
 claude plugin list
@@ -38,7 +36,6 @@ claude plugin marketplace update claude-forest
 
 # プラグインを更新
 claude plugin update ants@claude-forest
-claude plugin update silverfish@claude-forest
 
 # 更新したプラグインを確認
 claude plugin list

@@ -1,9 +1,0 @@
-{
-  "name": "silverfish",
-  "version": "0.1.0",
-  "description": "作業記録・タスク管理",
-  "author": {
-    "name": "strange-insect"
-  },
-  "skills": "./skills/"
-}
