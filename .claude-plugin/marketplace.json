@@ -5,14 +5,24 @@
   },
   "plugins": [
     {
-      "name": "ants",
-      "version": "0.1.1",
+      "name": "cecropia",
+      "version": "0.0.0",
       "description": "よく使う機能の基本セット",
       "category": "productivity",
       "author": {
         "name": "strange-insect"
       },
-      "source": "./plugins/ants"
+      "source": "./plugins/cecropia"
+    },
+    {
+      "name": "aphid",
+      "version": "0.0.0",
+      "description": "Codex Integration",
+      "category": "productivity",
+      "author": {
+        "name": "strange-insect"
+      },
+      "source": "./plugins/aphid"
     }
   ]
 }

@@ -1,7 +1,5 @@
 # claude-forest
 
-[strange-insect](https://github.com/strange-insect) の Claude Code プラグイン集。
-
 ## マーケットプレイスの追加
 
 ```bash
@@ -16,13 +14,15 @@ claude plugin marketplace list
 
 | プラグイン | 説明 |
 |-----------|------|
-| [ants](./plugins/ants/README.md) | よく使う機能の基本セット |
+| [cecropia](./plugins/cecropia/docs/README.md) | よく使う機能の基本セット |
+| [aphid](./plugins/aphid/docs/README.md) | OpenAI Codex CLI 連携 |
 
 ## インストール
 
 ```bash
 # プラグインをインストール
-claude plugin install ants@claude-forest
+claude plugin install cecropia@claude-forest
+claude plugin install aphid@claude-forest
 
 # インストール済みプラグインを確認
 claude plugin list
@@ -35,7 +35,8 @@ claude plugin list
 claude plugin marketplace update claude-forest
 
 # プラグインを更新
-claude plugin update ants@claude-forest
+claude plugin update cecropia@claude-forest
+claude plugin update aphid@claude-forest
 
 # 更新したプラグインを確認
 claude plugin list
@@ -46,5 +47,6 @@ claude plugin list
 ## ローカルで試す（セッション限定）
 
 ```bash
-claude --plugin-dir /path/to/claude-forest/plugins/ants
+claude --plugin-dir /path/to/claude-forest/plugins/cecropia
+claude --plugin-dir /path/to/claude-forest/plugins/aphid
 ```

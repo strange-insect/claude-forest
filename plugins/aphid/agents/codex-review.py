@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+"""codex-review: OpenAI Codex CLI でコードレビューを実行し、結果を JSON で返す。
+
+呼び出し:
+    codex-review.py [--session-id UUID] --message "レビュー指示"
+    codex-review.py [--session-id UUID]  # stdin からメッセージを読む
+
+新規セッション時のみ固定プロンプト（役割・出力ルール・標準観点）を先頭に付加する。
+"""
+
+from __future__ import annotations
+
+import importlib.util as _ilu
+import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import _ask_common as common  # noqa: E402
+
+_spec = _ilu.spec_from_file_location("_codex_ask", Path(__file__).resolve().parent / "codex-ask.py")
+_m = _ilu.module_from_spec(_spec)
+_spec.loader.exec_module(_m)  # type: ignore[union-attr]
+extract_codex_session_id = _m.extract_codex_session_id
+
+FIXED_PROMPT = """コードレビューを実施してください。
+コードの修正は一切行わず、レビューコメントの出力のみを行ってください。
+ファイルの読み取りは許可されていますが、書き込みは行わないでください。
+
+【レビュー出力ルール】
+- 問題の深刻度を示すこと（Critical / Warning / Info / Suggestion）
+- ファイルパスと行番号を明記すること
+- 修正案がある場合は具体的なコード例を含めること（実際の修正はしない）
+- 変更差分だけでなく、変更箇所の周辺コードも読み、以下を幅広く・深くレビューすること
+
+【標準的なレビュー観点】
+
+1. **正確性・ロジック**: バグ、エッジケース、境界値、競合状態
+2. **セキュリティ**: インジェクション、認証・認可漏れ、機密情報の露出
+3. **ドキュメント整合性**: README・コメント・JSDoc/docstring・CHANGELOG 等の更新漏れ
+4. **周辺コードとの整合性**: 変更していない関数・クラス・設定・テストが変更後の実装と矛盾していないか
+5. **類似機能との整合性**: コードベース内の類似した実装・命名規則・パターンと乖離していないか
+6. **ワークフロー・連携影響**: 上流・下流の処理フロー、呼び出し元・呼び出し先との接続部分に影響が出ていないか
+7. **データライフサイクル**: 同じデータを参照・更新する機能との不整合
+8. **テスト網羅性**: 追加・変更したロジックに対応するテストが存在するか
+9. **保守性**: 命名、重複、抽象化の適切さ
+10. **パフォーマンス**: 不要な計算・I/O・メモリ使用
+
+【ユーザからの指示文】
+"""
+
+
+def build_prompt(message: str, session_id: str = "") -> str:
+    return message if session_id else FIXED_PROMPT + message
+
+
+def main() -> int:
+    codex_path, use_shell = common.resolve_command("codex")
+    if codex_path == "codex":
+        print(
+            "ERROR: 'codex' コマンドが見つかりません。OpenAI Codex CLI をインストールしてください。",
+            file=sys.stderr,
+        )
+        return 1
+
+    message, session_id = common.parse_args(sys.argv[1:])
+    prompt = build_prompt(message, session_id)
+
+    tmp_jsonl = common.make_temp("codex-review-jsonl-")
+    tmp_msg = common.make_temp("codex-review-msg-")
+    tmp_stderr = common.make_temp("codex-review-err-")
+
+    try:
+        codex_options = [
+            "--skip-git-repo-check",
+            "--sandbox",
+            "read-only",
+            "--full-auto",
+            "--json",
+        ]
+        cmd = [codex_path, "--ask-for-approval", "never", "exec", *codex_options]
+        if session_id:
+            cmd += ["resume", session_id]
+        cmd += ["-o", str(tmp_msg), "-"]
+
+        with tmp_jsonl.open("wb") as out_fp, tmp_stderr.open("wb") as err_fp:
+            proc = subprocess.run(
+                cmd,
+                input=(prompt + "\n").encode("utf-8"),
+                stdout=out_fp,
+                stderr=err_fp,
+                check=False,
+                shell=use_shell,
+            )
+        exit_code = proc.returncode
+
+        extracted_id = extract_codex_session_id(tmp_jsonl)
+        if extracted_id == "unresolved" and session_id:
+            extracted_id = session_id
+
+        if exit_code != 0:
+            answer = common.read_text(tmp_msg).strip() or "（回答の取得に失敗しました）"
+            error_detail = common.format_error_detail(exit_code, tmp_stderr, tmp_jsonl)
+            sid = extracted_id if extracted_id != "unresolved" else (session_id or "unresolved")
+            common.emit_result(sid, answer, "error", exit_code, error_detail)
+            return 1
+
+        answer = common.read_text(tmp_msg) or "（レビュー結果の取得に失敗しました - 出力ファイルが空です）"
+        common.emit_result(extracted_id, answer, "success", 0)
+        return 0
+    finally:
+        for path in (tmp_jsonl, tmp_msg, tmp_stderr):
+            path.unlink(missing_ok=True)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
