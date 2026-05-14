@@ -1,0 +1,9 @@
+{
+  "name": "cecropia",
+  "version": "0.0.0",
+  "description": "よく使う機能の基本セット",
+  "author": {
+    "name": "strange-insect"
+  },
+  "skills": "./skills/"
+}
