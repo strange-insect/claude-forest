@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "cecropia",
-      "version": "0.0.0",
+      "version": "0.0.1",
       "description": "よく使う機能の基本セット",
       "category": "productivity",
       "author": {
@@ -16,7 +16,7 @@
     },
     {
       "name": "aphid",
-      "version": "0.0.0",
+      "version": "0.0.1",
       "description": "Codex Integration",
       "category": "productivity",
       "author": {

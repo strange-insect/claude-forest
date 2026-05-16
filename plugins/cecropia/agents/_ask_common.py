@@ -6,6 +6,7 @@ shell 側依存 (jq / mktemp / install -d / date '+%3N' / basename) を Python s
 
 from __future__ import annotations
 
+import errno
 import json
 import os
 import shutil
@@ -70,6 +71,21 @@ def format_error_detail(exit_code: int, stderr_path: Path, stdout_path: Path | N
     return "\n".join(parts)
 
 
+def safe_unlink(path: Path) -> None:
+    """一時ファイルを削除する。Windows のファイルロック (WinError 32/33) のみ握りつぶす。
+
+    握りつぶした場合 path は %TEMP% に残存する。OS の一時領域 cleanup に委ねる。
+    """
+    try:
+        path.unlink(missing_ok=True)
+    except OSError as exc:
+        if os.name == "nt" and (
+            getattr(exc, "winerror", None) in (32, 33) or exc.errno in {errno.EACCES, errno.EBUSY}
+        ):
+            return
+        raise
+
+
 def read_text(path: Path) -> str:
     if not path.exists():
         return ""
@@ -89,5 +105,6 @@ def emit_result(session_id: str, answer: str, status: str, exit_code: int, error
     }
     if error_detail:
         payload["error_detail"] = error_detail
-    sys.stdout.write(json.dumps(payload, ensure_ascii=False))
-    sys.stdout.flush()
+    data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    sys.stdout.buffer.write(data)
+    sys.stdout.buffer.flush()
