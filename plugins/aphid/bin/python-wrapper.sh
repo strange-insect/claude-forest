@@ -59,6 +59,26 @@ Failed to create the plugin Python environment.
 MSG
 }
 
+# Git Bash / MSYS2 上では環境変数のパスが /g/... 形式で渡されるが、Windows ネイティブ
+# Python は pathlib がこれを相対パス扱いし is_file() が失敗する。
+# exec 直前にのみ呼び出し、cygpath で Windows パスに変換して Python プロセスに渡す。
+_pw_normalize_env_for_windows() {
+  if ! command -v cygpath >/dev/null 2>&1; then
+    [[ "${MSYSTEM:-}${OSTYPE:-}" =~ (MSYS|MINGW|cygwin) ]] \
+      && printf 'WARN: cygpath not found; CLAUDE_PLUGIN_* may be passed as POSIX-style paths\n' >&2
+    return 0
+  fi
+  local var val
+  for var in CLAUDE_PLUGIN_ROOT CLAUDE_PLUGIN_DATA; do
+    val="${!var:-}"
+    # POSIX 形式 (/x/...) のみ正規化対象。すでに Windows 形式や UNC の場合は触らない。
+    [[ "${val}" == /* ]] || continue
+    val="$(cygpath -w "${val}" 2>/dev/null)" || continue
+    printf -v "${var}" '%s' "${val}"
+    export "${var}"
+  done
+}
+
 # 候補検証
 #
 # shell 層 (本関数):
@@ -304,10 +324,12 @@ _pw_install_requirements() {
 if [[ -n "${!_PW_CONDA_ENV_VAR:-}" ]] && command -v conda >/dev/null 2>&1 \
    && _pw_validate_conda_env "${!_PW_CONDA_ENV_VAR}"; then
   _pw_install_requirements
+  _pw_normalize_env_for_windows
   exec conda run -n "${!_PW_CONDA_ENV_VAR}" python "$@"
 fi
 if [[ -n "${!_PW_PYTHON_VAR:-}" ]] && _pw_validate_python "${!_PW_PYTHON_VAR}"; then
   _pw_install_requirements
+  _pw_normalize_env_for_windows
   exec "${!_PW_PYTHON_VAR}" "$@"
 fi
 
@@ -320,10 +342,12 @@ if [[ -n "${!_PW_CONDA_ENV_VAR:-}" ]]; then
   export "${_PW_CONDA_ENV_VAR}"
   unset "${_PW_PYTHON_VAR}"
   _pw_install_requirements
+  _pw_normalize_env_for_windows
   exec conda run -n "${!_PW_CONDA_ENV_VAR}" python "$@"
 fi
 
 export "${_PW_PYTHON_VAR}"
 unset "${_PW_CONDA_ENV_VAR}"
 _pw_install_requirements
+_pw_normalize_env_for_windows
 exec "${!_PW_PYTHON_VAR}" "$@"

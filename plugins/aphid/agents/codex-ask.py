@@ -103,7 +103,7 @@ def main() -> int:
         return 0
     finally:
         for path in (tmp_jsonl, tmp_msg, tmp_stderr):
-            path.unlink(missing_ok=True)
+            common.safe_unlink(path)
 
 
 if __name__ == "__main__":
