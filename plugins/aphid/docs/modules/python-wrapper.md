@@ -60,7 +60,7 @@ venv / conda 環境が有効でないと判定された場合は自動再作成�
 | モード | 実行方法 |
 |---|---|
 | venv モード | `APHID_PYTHON` の値で `exec <python> <args>` |
-| conda モード | `exec conda run -n <env> python <args>` |
+| conda モード | `exec conda run --no-capture-output -n <env> python <args>` |
 
 ## 依存パッケージのインストール
 

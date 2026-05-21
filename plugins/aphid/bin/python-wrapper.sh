@@ -29,7 +29,9 @@
 #
 # 実行モードは venv と conda の 2 種:
 #   - venv モード: ${CLAUDE_PLUGIN_DATA}/venv の Python で exec
-#   - conda モード: conda run -n <env-name> python で exec
+#   - conda モード: conda run --no-capture-output -n <env-name> python で exec
+#     (--no-capture-output が無いと conda 側で stdin/stdout/stderr が捕捉され、
+#      heredoc などで渡した stdin が子プロセスに届かない — conda/conda#9412 系)
 
 set -euo pipefail
 
@@ -325,7 +327,7 @@ if [[ -n "${!_PW_CONDA_ENV_VAR:-}" ]] && command -v conda >/dev/null 2>&1 \
    && _pw_validate_conda_env "${!_PW_CONDA_ENV_VAR}"; then
   _pw_install_requirements
   _pw_normalize_env_for_windows
-  exec conda run -n "${!_PW_CONDA_ENV_VAR}" python "$@"
+  exec conda run --no-capture-output -n "${!_PW_CONDA_ENV_VAR}" python "$@"
 fi
 if [[ -n "${!_PW_PYTHON_VAR:-}" ]] && _pw_validate_python "${!_PW_PYTHON_VAR}"; then
   _pw_install_requirements
@@ -343,7 +345,7 @@ if [[ -n "${!_PW_CONDA_ENV_VAR:-}" ]]; then
   unset "${_PW_PYTHON_VAR}"
   _pw_install_requirements
   _pw_normalize_env_for_windows
-  exec conda run -n "${!_PW_CONDA_ENV_VAR}" python "$@"
+  exec conda run --no-capture-output -n "${!_PW_CONDA_ENV_VAR}" python "$@"
 fi
 
 export "${_PW_PYTHON_VAR}"
