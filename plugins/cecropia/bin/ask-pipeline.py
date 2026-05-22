@@ -41,9 +41,15 @@ def die(msg: str, code: int = 1) -> None:
     sys.exit(code)
 
 
-def _build_agent_prompt(run_script: Path, message: str, session_id: str) -> str:
+def _build_agent_prompt(
+    run_script: Path,
+    message: str,
+    session_id: str,
+    inject_fixed_prompt: bool = False,
+) -> str:
     """agentスクリプルの build_prompt を動的importして呼び出す。
     build_prompt が存在しない場合は message をそのまま返す。
+    inject_fixed_prompt を受け取れるシグネチャの場合のみ追加で渡す（後方互換）。
     """
     try:
         spec = importlib.util.spec_from_file_location("_agent_tmp", run_script)
@@ -53,6 +59,13 @@ def _build_agent_prompt(run_script: Path, message: str, session_id: str) -> str:
         spec.loader.exec_module(mod)  # type: ignore[union-attr]
         fn = getattr(mod, "build_prompt", None)
         if callable(fn):
+            import inspect
+            try:
+                params = inspect.signature(fn).parameters
+            except (TypeError, ValueError):
+                params = {}
+            if "inject_fixed_prompt" in params:
+                return fn(message, session_id, inject_fixed_prompt=inject_fixed_prompt)
             return fn(message, session_id)
     except Exception:
         pass
@@ -184,6 +197,7 @@ def main() -> int:
     session_id = ""
     output_dir = ""
     message = ""
+    inject_fixed_prompt = False
 
     argv = sys.argv[1:]
     i = 0
@@ -204,6 +218,9 @@ def main() -> int:
         elif arg == "--output-dir" and i + 1 < len(argv):
             output_dir = argv[i + 1]
             i += 2
+        elif arg == "--inject-fixed-prompt":
+            inject_fixed_prompt = True
+            i += 1
         else:
             die(f"不明なオプション: {arg}")
 
@@ -270,7 +287,7 @@ def main() -> int:
     json_path = json_dir / f"{file_stem}.json"
 
     mode = "continuation" if session_id else "new"
-    built_prompt = _build_agent_prompt(run_script, message, session_id)
+    built_prompt = _build_agent_prompt(run_script, message, session_id, inject_fixed_prompt)
 
     try:
         json_dir.mkdir(parents=True, exist_ok=True)
@@ -299,6 +316,8 @@ def main() -> int:
     run_args = ["--message", message]
     if session_id:
         run_args += ["--session-id", session_id]
+    if inject_fixed_prompt:
+        run_args += ["--inject-fixed-prompt"]
 
     agent_stdout, exit_code = run_step(run_script, run_args)
     if exit_code != 0:

@@ -75,7 +75,7 @@ Opus セッションには以下のツールのみ許可される。
 ### session_id による会話継続
 
 ログの `セッションID` 欄に記録されている ID を次回呼び出しの `session_id` に渡すと、同じ Opus セッションで会話を続けられる。
-`session_id` は opus-review でも使用可能。（継続セッション時の挙動は opus-ask と opus-review で違いはないがログファイル名の識別性が向上する。）
+`session_id` は opus-review でも使用可能。
 
 ## Claude CLI 実行引数
 

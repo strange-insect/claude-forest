@@ -67,7 +67,7 @@ def main() -> int:
         )
         return 1
 
-    message, session_id = common.parse_args(sys.argv[1:])
+    message, session_id, _flags = common.parse_args(sys.argv[1:])
     prompt = build_prompt(message, session_id)
 
     tmp_output = common.make_temp("opus-ask-output-")

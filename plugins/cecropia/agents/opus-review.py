@@ -2,10 +2,11 @@
 """opus-review: claude -p + Opus モデルでコードレビューを実行し、結果を JSON で返す。
 
 呼び出し:
-    opus-review.py [--session-id UUID] --message "レビュー指示"
-    opus-review.py [--session-id UUID]  # stdin からメッセージを読む
+    opus-review.py [--session-id UUID] [--inject-fixed-prompt] --message "レビュー指示"
+    opus-review.py [--session-id UUID] [--inject-fixed-prompt]  # stdin からメッセージを読む
 
-新規セッション時のみ固定プロンプト（役割・出力ルール・標準観点）を先頭に付加する。
+新規セッション時は必ず固定プロンプト（役割・出力ルール・標準観点）を先頭に付加する。
+継続セッション時は通常付加しないが、`--inject-fixed-prompt` 指定時のみ付加する。
 
 Tools: --tools で Write/Edit を無効化し Read/Glob/Grep/Bash のみを許可する。
 ただし Bash 経由で `cat > file` 等の書き込みは可能なので、信頼できないリポジトリでの利用には注意。
@@ -57,8 +58,11 @@ FIXED_PROMPT = """コードレビューを実施してください。
 """
 
 
-def build_prompt(message: str, session_id: str = "") -> str:
-    return message if session_id else FIXED_PROMPT + message
+def build_prompt(message: str, session_id: str = "", inject_fixed_prompt: bool = False) -> str:
+    """初回（session_id 無し）は必ず、継続時は inject_fixed_prompt=True の場合のみ固定プロンプトを付加。"""
+    if not session_id or inject_fixed_prompt:
+        return FIXED_PROMPT + message
+    return message
 
 
 def main() -> int:
@@ -70,8 +74,8 @@ def main() -> int:
         )
         return 1
 
-    message, session_id = common.parse_args(sys.argv[1:])
-    prompt = build_prompt(message, session_id)
+    message, session_id, flags = common.parse_args(sys.argv[1:])
+    prompt = build_prompt(message, session_id, inject_fixed_prompt=flags.get("inject_fixed_prompt", False))
 
     tmp_output = common.make_temp("opus-review-output-")
     tmp_stderr = common.make_temp("opus-review-err-")

@@ -30,10 +30,16 @@ def resolve_command(name: str) -> tuple[str, bool]:
     return resolved, False
 
 
-def parse_args(argv: list[str]) -> tuple[str, str]:
-    """--message / --session-id / stdin から (message, session_id) を取り出す。"""
+def parse_args(argv: list[str]) -> tuple[str, str, dict[str, bool]]:
+    """--message / --session-id / --inject-fixed-prompt / stdin から (message, session_id, flags) を取り出す。
+
+    flags は agent 別の振る舞いを切り替えるブーリアン辞書。現状のキー:
+    - inject_fixed_prompt: agent が定義する固定プロンプト（役割・出力ルール・観点等、agent によって内容は異なる）の
+      挿入を明示的に要求するフラグ
+    """
     message = ""
     session_id = ""
+    flags: dict[str, bool] = {"inject_fixed_prompt": False}
     i = 0
     while i < len(argv):
         arg = argv[i]
@@ -43,6 +49,9 @@ def parse_args(argv: list[str]) -> tuple[str, str]:
         elif arg == "--session-id" and i + 1 < len(argv):
             session_id = argv[i + 1]
             i += 2
+        elif arg == "--inject-fixed-prompt":
+            flags["inject_fixed_prompt"] = True
+            i += 1
         else:
             print(f"ERROR: 不明なオプション: {arg}", file=sys.stderr)
             sys.exit(1)
@@ -51,7 +60,7 @@ def parse_args(argv: list[str]) -> tuple[str, str]:
     if not message:
         print("ERROR: --message または stdin でメッセージを指定してください", file=sys.stderr)
         sys.exit(1)
-    return message, session_id
+    return message, session_id, flags
 
 
 def make_temp(prefix: str) -> Path:
