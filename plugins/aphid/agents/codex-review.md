@@ -5,7 +5,7 @@ description: |-
   ユーザーが「codexでレビュー」「codexレビュー」「codex-review」と言った場合に使用。
   agent 名を指定せず単に「レビューして」と言った場合は使用しない。
 
-  呼び出しプロンプト形式: "[session_id=<text>] [output_dir=<path>] review_instruction=<レビュー指示>"
+  呼び出しプロンプト形式: "[session_id=<text>] [output_dir=<path>] [reinject_guideline=<true|false>] review_instruction=<レビュー指示>"
 
   session_id [OPTIONAL]:
   - レビュー指摘対応の場合は初回レビュー時に発行された session_id を指定する
@@ -15,9 +15,18 @@ description: |-
   - 未指定の場合はデフォルトロケーションに配置
   - 指定/未指定に関わらずレビューログファイルのフルパスが返される
 
+  reinject_guideline [OPTIONAL]:
+  - 役割定義・出力ルール・標準レビュー観点などの固定プロンプトを review_instruction の先頭に付加するかどうか
+  - 初回レビュー（session_id 未指定時）は値に関わらず必ず付加される
+  - 継続レビュー（session_id 指定時）は true を指定した場合のみ付加される
+  - `codex-ask` からの継続セッションで初回プロンプトを codex に与えていない場合に指定する
+
   review_instruction [REQUIRED]:
   - 最もシンプルな指定は「未コミットの変更をレビューしてください」
   - 必要に応じて背景情報、対象範囲、比較元ブランチ名、レビュー観点などの詳細情報を記載する
+      - レビュー観点は自動で提供されるため以下の場合以外は指定しない
+          - 特殊なレビュー観点を追加する場合は「基本的な観点に加え次の観点でレビューしてください」
+          - 特定のレビュー観点に限定したい場合は「次の観点に限定してレビューしてください」
   - 再レビューの場合は以下の情報を添付する
       - 1. 対応済みの指摘、対応方法、判断経緯
       - 2. 未対応の指摘、未対応とした理由
@@ -33,7 +42,7 @@ model: sonnet
 ## 標準的な呼び出し prompt 形式:
 
 ```
-[session_id=<UUID>] [output_dir=<path>] review_instruction=<レビュー指示>
+[session_id=<UUID>] [output_dir=<path>] [reinject_guideline=<true|false>] review_instruction=<レビュー指示>
 ```
 
 ## 手順
@@ -49,6 +58,7 @@ model: sonnet
 注意:
 - 入力プロンプトで session_id が指定された場合に限り `--session-id` オプションを付与する
 - 入力プロンプトで output_dir が指定された場合に限り `--output-dir` オプションを付与する
+- 入力プロンプトで reinject_guideline=true が指定された場合に限り `--inject-fixed-prompt` オプションを付与する（false や未指定の場合は付与しない）
 - `CLAUDE_PLUGIN_ROOT` と `CLAUDE_PLUGIN_DATA` は additionalContext で提供された値を使用し、コマンド実行時に環境変数として export する
 - review_instruction の値は改変せず原文のまま記載すること。
 - エージェントはログファイルを開いて内容を読まないこと。
@@ -60,7 +70,8 @@ export CLAUDE_PLUGIN_DATA="${CLAUDE_PLUGIN_DATA}"
   --agent codex-review \
   --lock-prefix codex \
   [--session-id "<SESSION_ID>"] \
-  [--output-dir "<OUTPUT_DIR>"] <<'EOF'
+  [--output-dir "<OUTPUT_DIR>"] \
+  [--inject-fixed-prompt] <<'EOF'
 <review_instruction の値>
 EOF
 ```

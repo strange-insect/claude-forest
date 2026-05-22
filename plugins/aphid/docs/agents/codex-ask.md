@@ -63,7 +63,7 @@ OpenAI Codex CLI に質問を送り、回答を Markdown ログファイルに�
 ### session_id による会話継続
 
 ログの `セッションID` 欄に記録されている ID を次回呼び出しの `session_id` に渡すと、同じ Codex スレッドで会話を続けられる。
-`session_id` はcodex-reviewでも使用可能。（継続セッション時の挙動はcodex-askとcodex-reviewで違いはないがログファイル名の識別性が向上する。）
+`session_id` はcodex-reviewでも使用可能。
 
 ## Codex CLI 実行引数
 

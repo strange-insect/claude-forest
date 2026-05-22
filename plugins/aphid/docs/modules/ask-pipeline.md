@@ -18,6 +18,7 @@ agent から呼ばれ、AI 実行・ログ生成・ファイル配置の一連�
 | `--session-id <UUID>` | 省略可 | セッション継続時に指定 |
 | `--lock-prefix <text>` | 省略可 | 排他ロックキーのプレフィックス。省略時は `--agent` の値を使用 |
 | `--output-dir <PATH>` | 省略可 | ログの配置先ディレクトリ |
+| `--inject-fixed-prompt` | 省略可 | agent 固有の固定プロンプト（役割定義・観点など、内容は agent 実装次第）を message の先頭へ明示的に付加する。`build_prompt(message, session_id, inject_fixed_prompt=...)` に伝搬される。引数を受け取らない agent ではフラグは無視される |
 
 ## パイプライン
 
@@ -25,12 +26,13 @@ agent から呼ばれ、AI 実行・ログ生成・ファイル配置の一連�
 
 agent 実行前に、ファイル名（`<timestamp>_<project>_<agent>`）を確定する。
 `agents/<agent>.py` の `build_prompt` を動的 import して実際に送信するプロンプト（固定プロンプト含む）を取得し、answer を「処理中...」とした pending JSON を生成する。
+`build_prompt` が `inject_fixed_prompt` 引数を受け付ける場合は、`--inject-fixed-prompt` の指定値がそのまま渡される（受け付けない場合は無視され、現行シグネチャ `(message, session_id)` で呼び出される）。
 `save-ask-log.py` でその JSON から Markdown を生成し、出力先ディレクトリに配置する（プレースホルダー）。
 プレースホルダーは Step 2 で同名ファイルに上書きされる。
 
 ### Step 1: agent 実行
 
-`agents/<agent>.py` を `--message` と `--session-id`（指定時）を渡して実行する。
+`agents/<agent>.py` を `--message`、`--session-id`（指定時）、`--inject-fixed-prompt`（指定時）を渡して実行する。
 agent は API 呼び出しのみを担い、結果（session_id・answer・status・exit_code・error_detail）を JSON 形式で stdout に返す。
 ask-pipeline がその JSON を受け取り、Step 0 と同じパスに最終 JSON を書き込む。
 
