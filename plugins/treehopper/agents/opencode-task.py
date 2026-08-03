@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""opencode-worker: opencode CLI で ファイル書き込みを含む作業を実行し、結果を JSON で返す。
+"""opencode-task: opencode CLI で ファイル書き込みを含む作業を実行し、結果を JSON で返す。
 
 呼び出し:
-    opencode-worker.py [--session-id ID] [--inject-fixed-prompt] --message "作業指示"
-    opencode-worker.py [--session-id ID] [--inject-fixed-prompt]  # stdin からメッセージを読む
+    opencode-task.py [--session-id ID] [--inject-fixed-prompt] --message "作業指示"
+    opencode-task.py [--session-id ID] [--inject-fixed-prompt]  # stdin からメッセージを読む
 
 stdout には結果 JSON を返す（ask-pipeline.py が受け取る）。
 
@@ -98,8 +98,8 @@ def main() -> int:
     message, session_id, flags = common.parse_args(sys.argv[1:])
     prompt = build_prompt(message, session_id, inject_fixed_prompt=flags.get("inject_fixed_prompt", False))
 
-    tmp_jsonl = common.make_temp("opencode-worker-jsonl-")
-    tmp_stderr = common.make_temp("opencode-worker-err-")
+    tmp_jsonl = common.make_temp("opencode-task-jsonl-")
+    tmp_stderr = common.make_temp("opencode-task-err-")
 
     try:
         opencode_options = [

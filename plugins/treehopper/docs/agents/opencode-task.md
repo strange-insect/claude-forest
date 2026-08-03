@@ -1,4 +1,4 @@
-# opencode-worker
+# opencode-task
 
 opencode CLI にファイルの変更などを含む作業を依頼し、作業報告を Markdown ログファイルに保存する。
 `session_id` を使用して完了後のセッションに追加作業指示を与えたり、opencode-ask を使用して作業内容の質疑を行うことができる。
@@ -7,8 +7,8 @@ opencode CLI にファイルの変更などを含む作業を依頼し、作業�
 
 | 項目 | 値 |
 |---|---|
-| agent 名 | `opencode-worker` |
-| 実装 | `agents/opencode-worker.py` |
+| agent 名 | `opencode-task` |
+| 実装 | `agents/opencode-task.py` |
 | 使用モデル | `sonnet` |
 | 実行コンテキスト | subagent（独立コンテキスト） |
 
@@ -58,7 +58,7 @@ opencode が作業ディレクトリを変更している可能性があるた�
 | opencode の回答 | opencode からの作業報告（固定プロンプトで指定した形式） |
 | エラー情報 | エラー時のみ。exit code と stderr の内容 |
 
-ログファイル名のパターン：`<YYYYMMDD_HHMMSS_mmm>_<プロジェクト名>_opencode-worker.md`
+ログファイル名のパターン：`<YYYYMMDD_HHMMSS_mmm>_<プロジェクト名>_opencode-task.md`
 
 ログに記録されるのは opencode の**報告テキスト**であり、実際のファイル変更内容ではない。変更の実体は作業ディレクトリに直接反映されるため、`git status --short --untracked-files=all` / `git diff` で確認する。
 

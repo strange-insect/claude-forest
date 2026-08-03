@@ -1,5 +1,5 @@
 ---
-name: opencode-worker
+name: opencode-task
 description: |-
   opencode で実装・修正・リファクタリング・ファイル生成など、ワークスペースを変更する作業を実行する。
   ユーザーが「opencodeに作業させて」「opencodeで実装して」と言った場合に使用。
@@ -53,7 +53,7 @@ model: sonnet
 export CLAUDE_PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT}"
 export CLAUDE_PLUGIN_DATA="${CLAUDE_PLUGIN_DATA}"
 "${CLAUDE_PLUGIN_ROOT}/bin/python-wrapper.sh" "${CLAUDE_PLUGIN_ROOT}/bin/ask-pipeline.py" \
-  --agent opencode-worker \
+  --agent opencode-task \
   --lock-prefix opencode \
   [--session-id "<SESSION_ID>"] \
   [--inject-fixed-prompt] \

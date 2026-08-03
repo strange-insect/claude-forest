@@ -33,5 +33,5 @@ claude plugin install treehopper@claude-forest
 |---------|------|
 | `opencode-ask` | opencode CLI で opencode と会話する |
 | `opencode-review` | opencode CLI で opencode にコードレビューを依頼する |
-| `opencode-worker` | opencode CLI で opencode にファイル書き込みを含む作業を依頼する |
+| `opencode-task` | opencode CLI で opencode にファイル書き込みを含む作業を依頼する |
 | `opencode-pairing` | 現在の Claude セッションを opencode セッションに 1:1 でペアリングする |
