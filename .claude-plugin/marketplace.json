@@ -23,6 +23,16 @@
         "name": "strange-insect"
       },
       "source": "./plugins/aphid"
+    },
+    {
+      "name": "treehopper",
+      "version": "0.0.1",
+      "description": "opencode Integration",
+      "category": "productivity",
+      "author": {
+        "name": "strange-insect"
+      },
+      "source": "./plugins/treehopper"
     }
   ]
 }
