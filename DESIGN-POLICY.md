@@ -13,7 +13,7 @@ subagent / skill（`context: fork`）内での Bash バックグラウンド実�
 
 ## ログ保存ディレクトリの .gitignore
 
-`opus-ask` / `opus-review` / `codex-ask` / `codex-review` のログ保存先ディレクトリ（`.llm-ask/`）を新規作成する際は、`*` を対象とした `.gitignore` を配置して git 管理対象外とする。ディレクトリが既に存在する場合は、元の git 管理ポリシーを尊重して `.gitignore` を作成・変更しない。
+`opus-ask` / `opus-review` / `codex-ask` / `codex-review` / `opencode-ask` / `opencode-review` のログ保存先ディレクトリ（`.llm-ask/`）を新規作成する際は、`*` を対象とした `.gitignore` を配置して git 管理対象外とする。ディレクトリが既に存在する場合は、元の git 管理ポリシーを尊重して `.gitignore` を作成・変更しない。
 
 ## 大量出力はファイルに保存してパスのみ返す
 

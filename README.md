@@ -16,6 +16,7 @@ claude plugin marketplace list
 |-----------|------|
 | [cecropia](./plugins/cecropia/docs/README.md) | よく使う機能の基本セット |
 | [aphid](./plugins/aphid/docs/README.md) | OpenAI Codex CLI 連携 |
+| [treehopper](./plugins/treehopper/docs/README.md) | opencode CLI 連携 |
 
 ## インストール
 
@@ -23,6 +24,7 @@ claude plugin marketplace list
 # プラグインをインストール
 claude plugin install cecropia@claude-forest
 claude plugin install aphid@claude-forest
+claude plugin install treehopper@claude-forest
 
 # インストール済みプラグインを確認
 claude plugin list
@@ -37,6 +39,7 @@ claude plugin marketplace update claude-forest
 # プラグインを更新
 claude plugin update cecropia@claude-forest
 claude plugin update aphid@claude-forest
+claude plugin update treehopper@claude-forest
 
 # 更新したプラグインを確認
 claude plugin list
@@ -49,4 +52,5 @@ claude plugin list
 ```bash
 claude --plugin-dir /path/to/claude-forest/plugins/cecropia
 claude --plugin-dir /path/to/claude-forest/plugins/aphid
+claude --plugin-dir /path/to/claude-forest/plugins/treehopper
 ```
