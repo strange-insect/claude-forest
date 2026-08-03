@@ -20,7 +20,7 @@ opencode CLI にファイルの変更などを含む作業を依頼し、作業�
 ## 呼び出し形式
 
 ```
-[session_id=<SESSION_ID>] [output_dir=<PATH>] [reinject_guideline=<true|false>] instruction=<作業指示>
+[session_id=<SESSION_ID>] [reinject_guideline=<true|false>] instruction=<作業指示>
 ```
 
 ### 引数
@@ -30,7 +30,6 @@ opencode CLI にファイルの変更などを含む作業を依頼し、作業�
 | `instruction=<作業指示>` | 必須 | opencode に依頼する作業内容。原文のまま渡す |
 | `session_id=<SESSION_ID>` | 省略可 | 指定すると以前の作業を継続する |
 | `reinject_guideline=<true\|false>` | 省略可 | 固定プロンプト（作業報告の形式指定）を先頭に付加するか。初回は値に関わらず付加される |
-| `output_dir=<PATH>` | 省略可 | ログファイルの保存先ディレクトリ。省略時はリポジトリルートの `.llm-ask/` フォルダに保存される |
 
 ## 親セッションへの応答
 
@@ -46,8 +45,7 @@ opencode が作業ディレクトリを変更している可能性があるた�
 
 ### 保存先
 
-`output_dir` を省略した場合、git リポジトリルート（リポジトリ外ならカレントディレクトリ）配下の `.llm-ask/` に保存される。
-`output_dir` に相対パスを渡した場合も同じ基準ディレクトリからの相対パスになる。
+ログは git リポジトリルート（リポジトリ外ならカレントディレクトリ）配下の `.llm-ask/` に保存される。保存先は変更できない。
 `.llm-ask/` フォルダを新規作成するときは `*` を対象とした `.gitignore` が自動生成される。
 `.llm-ask/` フォルダが既に存在する場合は `.gitignore` の作成/編集は行われない。
 

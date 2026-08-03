@@ -22,7 +22,7 @@
 ## 呼び出し形式
 
 ```
-[session_id=<SESSION_ID>] [output_dir=<PATH>] [reinject_guideline=<true|false>] review_instruction=<レビュー指示>
+[session_id=<SESSION_ID>] [reinject_guideline=<true|false>] review_instruction=<レビュー指示>
 ```
 
 ### 引数
@@ -31,7 +31,6 @@
 |---|---|---|
 | `review_instruction=<レビュー指示>` | 必須 | レビュー指示。原文のまま渡す |
 | `session_id=<SESSION_ID>` | 省略可 | 指摘対応後に継続レビューする場合に前回の session_id を指定する |
-| `output_dir=<PATH>` | 省略可 | ログファイルの保存先ディレクトリ。省略時はリポジトリルートの `.llm-ask/` フォルダに保存される |
 | `reinject_guideline=<true\|false>` | 省略可 | 役割定義・出力ルール・標準レビュー観点などの固定プロンプトを review_instruction の先頭に付加するかどうか。初回レビュー時はこの値に関わらず必ず付加される。継続レビュー時は `true` を指定した場合のみ付加される。`opus-ask` からの継続セッションで初回プロンプトを Opus に与えていない場合に指定する |
 
 `review_instruction` の最もシンプルな例：「未コミットの変更をレビューしてください」。必要に応じて背景情報・対象範囲・比較元ブランチ名・レビュー観点を追加する。
@@ -97,8 +96,7 @@
 
 ### 保存先
 
-`output_dir` を省略した場合、git リポジトリルート（リポジトリ外ならカレントディレクトリ）配下の `.llm-ask/` に保存される。
-`output_dir` に相対パスを渡した場合も同じ基準ディレクトリからの相対パスになる。
+ログは git リポジトリルート（リポジトリ外ならカレントディレクトリ）配下の `.llm-ask/` に保存される。保存先は変更できない。
 `.llm-ask/` フォルダを新規作成するときは `*` を対象とした `.gitignore` が自動生成される。
 `.llm-ask/` フォルダが既に存在する場合は `.gitignore` の作成/編集は行われない。
 

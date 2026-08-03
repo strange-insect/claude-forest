@@ -4,15 +4,10 @@ description: |-
   opencode で実装・修正・リファクタリング・ファイル生成など、ワークスペースを変更する作業を実行する。
   ユーザーが「opencodeに作業させて」「opencodeで実装して」と言った場合に使用。
 
-  呼び出しプロンプト形式: "[session_id=<text>] [output_dir=<path>] [reinject_guideline=<true|false>] instruction=<作業指示>"
+  呼び出しプロンプト形式: "[session_id=<text>] [reinject_guideline=<true|false>] instruction=<作業指示>"
 
   session_id [OPTIONAL]:
   - 以前の作業から継続する場合は session_id を指定する
-
-  output_dir [OPTIONAL]:
-  - 指定したディレクトリにログファイルが配置される
-  - 未指定の場合はデフォルトロケーションに配置
-  - 指定/未指定に関わらずログファイルのフルパスが返される
 
   reinject_guideline [OPTIONAL]:
   - 作業報告の形式指定などの固定プロンプトを instruction の先頭に付加するかどうか
@@ -34,7 +29,7 @@ model: sonnet
 ## 標準的な呼び出し prompt 形式:
 
 ```
-"[session_id=<text>] [output_dir=<path>] [reinject_guideline=<true|false>] instruction=<作業指示>"
+"[session_id=<text>] [reinject_guideline=<true|false>] instruction=<作業指示>"
 ```
 
 ## 手順
@@ -49,7 +44,6 @@ model: sonnet
 
 注意:
 - 入力プロンプトで session_id が指定された場合に限り `--session-id` オプションを付与する
-- 入力プロンプトで output_dir が指定された場合に限り `--output-dir` オプションを付与する
 - 入力プロンプトで reinject_guideline=true が指定された場合に限り `--inject-fixed-prompt` オプションを付与する（false や未指定の場合は付与しない）
 - `CLAUDE_PLUGIN_ROOT` と `CLAUDE_PLUGIN_DATA` は additionalContext で提供された値を使用し、コマンド実行時に環境変数として export する
 - instruction の値は改変せず原文のまま記載すること。
@@ -62,8 +56,8 @@ export CLAUDE_PLUGIN_DATA="${CLAUDE_PLUGIN_DATA}"
   --agent opencode-worker \
   --lock-prefix opencode \
   [--session-id "<SESSION_ID>"] \
-  [--output-dir "<OUTPUT_DIR>"] \
-  [--inject-fixed-prompt] <<'EOF'
+  [--inject-fixed-prompt] \
+  <<'EOF'
 <instruction の値>
 EOF
 ```
