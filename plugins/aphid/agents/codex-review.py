@@ -80,10 +80,9 @@ def main() -> int:
             "--skip-git-repo-check",
             "--sandbox",
             "read-only",
-            "--full-auto",
             "--json",
         ]
-        cmd = [codex_path, "--ask-for-approval", "never", "exec", *codex_options]
+        cmd = [codex_path, "exec", *codex_options]
         if session_id:
             cmd += ["resume", session_id]
         cmd += ["-o", str(tmp_msg), "-"]

@@ -114,11 +114,9 @@ Codex CLI は以下の固定引数で起動される。
 
 | オプション | 値 | 説明 |
 |---|---|---|
-| `--ask-for-approval` | `never` | ツール実行の承認を求めない |
-| サブコマンド | `exec` | 実行モード |
+| サブコマンド | `exec` | 実行モード（非対話。承認は求められない） |
 | `--skip-git-repo-check` | — | git リポジトリ外でも実行を許可 |
 | `--sandbox` | `read-only` | サンドボックス: ファイル読み取りのみ許可 |
-| `--full-auto` | — | ユーザー確認なしで完全自動実行 |
 | `--json` | — | JSON 形式で出力 |
 
 `session_id` を指定した場合は `exec` の後に `resume <session_id>` が付加される。
