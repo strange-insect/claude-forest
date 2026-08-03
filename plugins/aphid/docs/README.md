@@ -2,7 +2,7 @@
 
 OpenAI Codex CLI との連携機能を提供する Claude Code プラグイン。
 
-Codex との 1問1答・コードレビュー・セッションペアリングを agent として提供する。
+Codex との 1問1答・コードレビュー・ファイル書き込みを含む作業・セッションペアリングを agent として提供する。
 
 ## 動作環境
 
@@ -33,4 +33,5 @@ claude plugin install aphid@claude-forest
 |---------|------|
 | `codex-ask` | OpenAI Codex CLI で Codex と会話する |
 | `codex-review` | OpenAI Codex CLI で Codex でコードレビューを行う |
+| `codex-task` | OpenAI Codex CLI で Codex にファイル書き込みを含む作業を依頼する |
 | `codex-pairing` | 現在の Claude セッションを Codex セッションに 1:1 でペアリングする |
