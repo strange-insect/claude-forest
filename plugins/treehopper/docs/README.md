@@ -2,7 +2,7 @@
 
 opencode CLI との連携機能を提供する Claude Code プラグイン。
 
-opencode との 1問1答・コードレビュー・セッションペアリングを agent として提供する。
+opencode との 1問1答・コードレビュー・ファイル書き込みを含む作業・セッションペアリングを agent として提供する。
 
 ## 動作環境
 
@@ -33,4 +33,5 @@ claude plugin install treehopper@claude-forest
 |---------|------|
 | `opencode-ask` | opencode CLI で opencode と会話する |
 | `opencode-review` | opencode CLI で opencode にコードレビューを依頼する |
+| `opencode-worker` | opencode CLI で opencode にファイル書き込みを含む作業を依頼する |
 | `opencode-pairing` | 現在の Claude セッションを opencode セッションに 1:1 でペアリングする |

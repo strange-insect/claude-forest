@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# PreToolUse フック: opencode-ask / opencode-review 呼び出し時に session_id を検証する。
+# PreToolUse フック: opencode-ask / opencode-review / opencode-worker 呼び出し時に session_id を検証する。
 #
 # ペアリングファイルパスは CLAUDE_PLUGIN_DATA から組み立てる。
 #
@@ -10,12 +10,12 @@
 
 FLAT="$(cat | tr -d '\n')"
 
-# opencode-ask / opencode-review のみ対象（opencode-pairing 自身は除外）
+# opencode-ask / opencode-review / opencode-worker のみ対象（opencode-pairing 自身は除外）
 SUBAGENT_TYPE="$(printf '%s' "$FLAT" \
   | grep -o '"subagent_type"[[:space:]]*:[[:space:]]*"[^"]*"' \
   | sed 's/.*"\([^"]*\)"$/\1/')"
 case "$SUBAGENT_TYPE" in
-  *opencode-ask|*opencode-review) ;;
+  *opencode-ask|*opencode-review|*opencode-worker) ;;
   *) exit 0 ;;
 esac
 

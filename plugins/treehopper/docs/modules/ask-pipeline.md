@@ -1,6 +1,6 @@
 # ask-pipeline
 
-`opencode-ask` / `opencode-review` の共通実行パイプライン。
+`opencode-ask` / `opencode-review` / `opencode-worker` の共通実行パイプライン。
 agent から呼ばれ、AI 実行・ログ生成・ファイル配置の一連の処理を順に実行する。
 
 ## 基本情報
@@ -13,7 +13,7 @@ agent から呼ばれ、AI 実行・ログ生成・ファイル配置の一連�
 
 | オプション | 必須 | 説明 |
 |---|---|---|
-| `--agent <name>` | 必須 | 実行する agent 名（`opencode-ask` / `opencode-review`） |
+| `--agent <name>` | 必須 | 実行する agent 名（`opencode-ask` / `opencode-review` / `opencode-worker`） |
 | `--message <text>` | 必須（または stdin） | 送信メッセージ |
 | `--session-id <ID>` | 省略可 | セッション継続時に指定 |
 | `--lock-prefix <text>` | 省略可 | 排他ロックキーのプレフィックス。省略時は `--agent` の値を使用 |
@@ -33,7 +33,8 @@ agent 実行前に、ファイル名（`<timestamp>_<project>_<agent>`）を確�
 ### Step 1: agent 実行
 
 `agents/<agent>.py` を `--message`、`--session-id`（指定時）、`--inject-fixed-prompt`（指定時）を渡して実行する。
-agent は API 呼び出しのみを担い、結果（session_id・answer・status・exit_code・error_detail）を JSON 形式で stdout に返す。
+agent は opencode CLI 実行を担い、結果（session_id・answer・status・exit_code・error_detail）を JSON 形式で stdout に返す。
+`opencode-worker` のような書き込み可能 agent では、この段階で作業ディレクトリに副作用が発生しうる。
 ask-pipeline がその JSON を受け取り、Step 0 と同じパスに最終 JSON を書き込む。
 
 ### Step 2: Markdown ログ生成・上書き
@@ -58,6 +59,6 @@ Step 1 で生成される JSON ファイルは、Step 2 の Markdown 生成後�
 
 `--session-id` が指定された場合、`${CLAUDE_PLUGIN_DATA}/locks/<lock_prefix>_<session_id>.lock` を取得してから処理を開始する。`<lock_prefix>` は `--lock-prefix` で指定した値、省略時は `--agent` の値。同じロックを取得済みのプロセスが存在する場合、後発プロセスはエラーで即終了する。
 
-`--lock-prefix` を使うと複数の agent を同一ロックキーでグループ化できる。例えば `opencode-ask` と `opencode-review` に `--lock-prefix opencode` を指定すると、同じ session_id を持つ両者の同時実行が防止される。
+`--lock-prefix` を使うと複数の agent を同一ロックキーでグループ化できる。例えば `opencode-ask` / `opencode-review` / `opencode-worker` に `--lock-prefix opencode` を指定すると、同じ session_id を持つ複数 agent の同時実行が防止される。
 
 ※ ロックは OS レベルの file lock（POSIX: `fcntl.flock`、Windows: `LockFileEx`）で実装されており、プロセスが kill されても OS が自動解放する。
