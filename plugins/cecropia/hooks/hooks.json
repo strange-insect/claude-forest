@@ -10,6 +10,15 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/direnv-load.sh\"",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "SubagentStart": [

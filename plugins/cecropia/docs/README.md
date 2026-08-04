@@ -22,6 +22,7 @@ agent / skill ごとに使用する外部コマンドが異なる。利用する
 | Python 3.10+ | JSON 解析・パス処理・HTTP リクエスト等の cross-platform 実装 |
 | `gh` | GitHub API・PR 操作 |
 | `claude` | Claude Code CLI（`claude -p`） |
+| `direnv` | `.envrc` の環境変数を Bash 実行に読み込む場合に必要（任意。未インストールでも他機能は動作する） |
 
 ※ 使用可能な python/conda/pyenv が存在する場合、自動的にplugin専用の venv/conda env を作成する
 
