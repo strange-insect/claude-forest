@@ -22,6 +22,7 @@ agent / skill ごとに使用する外部コマンドが異なる。利用する
 | Python 3.10+ | JSON 解析・パス処理・HTTP リクエスト等の cross-platform 実装 |
 | `gh` | GitHub API・PR 操作 |
 | `claude` | Claude Code CLI（`claude -p`） |
+| `direnv` | `.envrc` の環境変数を Bash 実行に読み込む場合に必要（任意。未インストールでも他機能は動作する） |
 
 ※ 使用可能な python/conda/pyenv が存在する場合、自動的にplugin専用の venv/conda env を作成する
 
@@ -31,13 +32,20 @@ agent / skill ごとに使用する外部コマンドが異なる。利用する
 claude plugin install cecropia@claude-forest
 ```
 
+## 環境変数
+
+| 環境変数 | 対象 agent | 説明 |
+|---------|-----------|------|
+| `CLAUDE_ASK_DEFAULT_MODEL` | `claude-ask` | 使用するモデル。`<model>` または `<model>/<effort>` 形式。未設定または空文字列の場合は既定モデルを使用する |
+| `CLAUDE_REVIEW_DEFAULT_MODEL` | `claude-review` | 同上 |
+
 ## agent 一覧
 
 | agent 名 | 説明 |
 |---------|------|
-| `opus-ask` | 別セッションのOpusモデルと会話する |
-| `opus-review` | 別セッションの Claude Opus モデルでコードレビューを行う |
-| `opus-pairing` | 現在の Claude セッションを Opus セッションに 1:1 でペアリングする |
+| `claude-ask` | 別セッションのOpusモデルと会話する |
+| `claude-review` | 別セッションの Claude Opus モデルでコードレビューを行う |
+| `claude-pairing` | 現在の Claude セッションを Opus セッションに 1:1 でペアリングする |
 | `get-pr-info` | GitHub PR の情報を取得する |
 | `plant-uml` | PlantUML ソースコードと 画像(Kroki URL) の相互変換、ソースコードテキスト・Markdownのコードスニペットに対応 |
 | `export-session` | Claude Code のセッション会話全文を Markdown ファイルにエクスポートする |

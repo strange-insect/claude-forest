@@ -1,4 +1,4 @@
-# opus-ask
+# claude-ask
 
 別セッションの Claude Opus に質問を送り、回答を Markdown ログファイルに保存する。`session_id` を使って複数ターンの会話を継続できる。
 
@@ -6,22 +6,19 @@
 
 | 項目 | 値 |
 |---|---|
-| agent 名 | `opus-ask` |
-| 実装 | `agents/opus-ask.py` |
+| agent 名 | `claude-ask` |
+| 実装 | `agents/claude-ask.py` |
 | 使用モデル | `sonnet` |
 | 実行コンテキスト | subagent（独立コンテキスト） |
 
 ## トリガーフレーズ
 
-- 「opusに聞いて」
-- 「opus ask」
-- 「opus-ask」
-- 「opusで調べて」
+- 「claude-ask」
 
 ## 呼び出し形式
 
 ```
-[session_id=<SESSION_ID>] [output_dir=<PATH>] message_to_send=<メッセージ>
+[session_id=<SESSION_ID>] message_to_send=<メッセージ>
 ```
 
 ### 引数
@@ -30,7 +27,6 @@
 |---|---|---|
 | `message_to_send=<メッセージ>` | 必須 | Opus に送るメッセージ。原文のまま渡す |
 | `session_id=<SESSION_ID>` | 省略可 | 指定すると以前の会話を継続する |
-| `output_dir=<PATH>` | 省略可 | ログファイルの保存先ディレクトリ。省略時はリポジトリルートの `.llm-ask/` フォルダに保存される |
 
 ## 親セッションへの応答
 
@@ -56,8 +52,7 @@ Opus セッションには以下のツールのみ許可される。
 
 ### 保存先
 
-`output_dir` を省略した場合、git リポジトリルート（リポジトリ外ならカレントディレクトリ）配下の `.llm-ask/` に保存される。
-`output_dir` に相対パスを渡した場合も同じ基準ディレクトリからの相対パスになる。
+ログは git リポジトリルート（リポジトリ外ならカレントディレクトリ）配下の `.llm-ask/` に保存される。保存先は変更できない。
 `.llm-ask/` フォルダを新規作成するときは `*` を対象とした `.gitignore` が自動生成される。
 `.llm-ask/` フォルダが既に存在する場合は `.gitignore` の作成/編集は行われない。
 
@@ -67,15 +62,15 @@ Opus セッションには以下のツールのみ許可される。
 |---|---|
 | ヘッダー | 日時・モード（new / continuation）・ディレクトリ・セッション ID |
 | メッセージ | 送信したメッセージ原文 |
-| Opus の回答 | Opus からの回答 |
+| Claude の回答 | Opus モデルからの回答 |
 | エラー情報 | エラー時のみ。exit code と stderr の内容 |
 
-ログファイル名のパターン：`<YYYYMMDD_HHMMSS_mmm>_<プロジェクト名>_opus-ask.md`
+ログファイル名のパターン：`<YYYYMMDD_HHMMSS_mmm>_<プロジェクト名>_claude-ask.md`
 
 ### session_id による会話継続
 
 ログの `セッションID` 欄に記録されている ID を次回呼び出しの `session_id` に渡すと、同じ Opus セッションで会話を続けられる。
-`session_id` は opus-review でも使用可能。
+`session_id` は claude-review でも使用可能。
 
 ## Claude CLI 実行引数
 
@@ -85,11 +80,24 @@ Opus セッションには以下のツールのみ許可される。
 |---|---|---|
 | `-p` | — | 非インタラクティブモード（print mode） |
 | `--output-format` | `json` | JSON 形式で出力 |
-| `--model` | `Opus` | Opus モデルを使用 |
+| `--model` | `Opus` | 使用するモデル。`CLAUDE_ASK_DEFAULT_MODEL` で変更できる |
+| `--effort` | — | `CLAUDE_ASK_DEFAULT_MODEL` で effort を指定した場合のみ付与 |
 | `--dangerously-skip-permissions` | — | 権限確認をスキップ |
 | `--tools` | `Read,Glob,Grep,Bash,WebSearch,WebFetch` | 許可するツール |
 
 `session_id` を指定した場合は `--resume <session_id>` が付加される。
+
+## モデルの指定
+
+環境変数 `CLAUDE_ASK_DEFAULT_MODEL` で使用するモデルを指定できる。
+
+| 書式 | 例 | 動作 |
+|---|---|---|
+| `<model>` | `opus` | モデルのみ指定する |
+| `<model>/<effort>` | `opus/high` | モデルと reasoning effort を指定する |
+| 未設定 / 空文字列 | — | 既定の `Opus` を使用する |
+
+指定した値は `claude` の `--model`（model）と `--effort`（effort）にそのまま渡される。プラグイン側で値の妥当性は検証しないため、不正な値を指定した場合は claude 側がエラーを返し、その内容がログの「エラー情報」に記録される。
 
 ## エラー処理
 

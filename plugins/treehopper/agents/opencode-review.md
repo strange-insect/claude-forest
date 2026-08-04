@@ -5,15 +5,10 @@ description: |-
   ユーザーが「opencodeでレビュー」「opencodeレビュー」「opencode-review」と言った場合に使用。
   agent 名を指定せず単に「レビューして」と言った場合は使用しない。
 
-  呼び出しプロンプト形式: "[session_id=<text>] [output_dir=<path>] [reinject_guideline=<true|false>] review_instruction=<レビュー指示>"
+  呼び出しプロンプト形式: "[session_id=<text>] [reinject_guideline=<true|false>] review_instruction=<レビュー指示>"
 
   session_id [OPTIONAL]:
   - レビュー指摘対応の場合は初回レビュー時に発行された session_id を指定する
-
-  output_dir [OPTIONAL]:
-  - 指定したディレクトリにレビューログファイルが配置される
-  - 未指定の場合はデフォルトロケーションに配置
-  - 指定/未指定に関わらずレビューログファイルのフルパスが返される
 
   reinject_guideline [OPTIONAL]:
   - 役割定義・出力ルール・標準レビュー観点などの固定プロンプトを review_instruction の先頭に付加するかどうか
@@ -42,7 +37,7 @@ model: sonnet
 ## 標準的な呼び出し prompt 形式:
 
 ```
-[session_id=<ID>] [output_dir=<path>] [reinject_guideline=<true|false>] review_instruction=<レビュー指示>
+[session_id=<ID>] [reinject_guideline=<true|false>] review_instruction=<レビュー指示>
 ```
 
 ## 手順
@@ -57,7 +52,6 @@ model: sonnet
 
 注意:
 - 入力プロンプトで session_id が指定された場合に限り `--session-id` オプションを付与する
-- 入力プロンプトで output_dir が指定された場合に限り `--output-dir` オプションを付与する
 - 入力プロンプトで reinject_guideline=true が指定された場合に限り `--inject-fixed-prompt` オプションを付与する（false や未指定の場合は付与しない）
 - `CLAUDE_PLUGIN_ROOT` と `CLAUDE_PLUGIN_DATA` は additionalContext で提供された値を使用し、コマンド実行時に環境変数として export する
 - review_instruction の値は改変せず原文のまま記載すること。
@@ -70,8 +64,8 @@ export CLAUDE_PLUGIN_DATA="${CLAUDE_PLUGIN_DATA}"
   --agent opencode-review \
   --lock-prefix opencode \
   [--session-id "<SESSION_ID>"] \
-  [--output-dir "<OUTPUT_DIR>"] \
-  [--inject-fixed-prompt] <<'EOF'
+  [--inject-fixed-prompt] \
+  <<'EOF'
 <review_instruction の値>
 EOF
 ```

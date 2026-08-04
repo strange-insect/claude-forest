@@ -5,15 +5,10 @@ description: |-
   session_id を使った会話継続に対応するため、複数ターンの会話/議論や追加指示も可能。
   ユーザーが「codexに聞いて」「codex ask」「codex-ask」「codexで調べて」と言った場合に使用。
 
-  呼び出しプロンプト形式: "[session_id=<text>] [output_dir=<path>] message_to_send=<メッセージ>"
+  呼び出しプロンプト形式: "[session_id=<text>] message_to_send=<メッセージ>"
 
   session_id [OPTIONAL]:
   - 以前の会話から継続する場合は session_id を指定する
-
-  output_dir [OPTIONAL]:
-  - 指定したディレクトリにログファイルが配置される
-  - 未指定の場合はデフォルトロケーションに配置
-  - 指定/未指定に関わらずログファイルのフルパスが返される
 
   message_to_send [REQUIRED]:
   - codexに送信するメッセージ
@@ -28,7 +23,7 @@ model: sonnet
 ## 標準的な呼び出し prompt 形式:
 
 ```
-"[session_id=<text>] [output_dir=<path>] message_to_send=<メッセージ>"
+"[session_id=<text>] message_to_send=<メッセージ>"
 ```
 
 ## 手順
@@ -43,7 +38,6 @@ model: sonnet
 
 注意:
 - 入力プロンプトで session_id が指定された場合に限り `--session-id` オプションを付与する
-- 入力プロンプトで output_dir が指定された場合に限り `--output-dir` オプションを付与する
 - `CLAUDE_PLUGIN_ROOT` と `CLAUDE_PLUGIN_DATA` は additionalContext で提供された値を使用し、コマンド実行時に環境変数として export する
 - エージェントはログファイルを開いて内容を読まないこと。
 
@@ -54,7 +48,7 @@ export CLAUDE_PLUGIN_DATA="${CLAUDE_PLUGIN_DATA}"
   --agent codex-ask \
   --lock-prefix codex \
   [--session-id "<SESSION_ID>"] \
-  [--output-dir "<OUTPUT_DIR>"] <<'EOF'
+  <<'EOF'
 <メッセージ>
 EOF
 ```

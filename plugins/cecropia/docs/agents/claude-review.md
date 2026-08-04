@@ -1,4 +1,4 @@
-# opus-review
+# claude-review
 
 別セッションの Claude Opus にコードレビューを依頼し、結果を Markdown ログファイルに保存する。`session_id` を使って指摘対応の追加レビューを同一セッションで継続できる。
 
@@ -6,23 +6,21 @@
 
 | 項目 | 値 |
 |---|---|
-| agent 名 | `opus-review` |
-| 実装 | `agents/opus-review.py` |
+| agent 名 | `claude-review` |
+| 実装 | `agents/claude-review.py` |
 | 使用モデル | `sonnet` |
 | 実行コンテキスト | subagent（独立コンテキスト） |
 
 ## トリガーフレーズ
 
-- 「opusでレビュー」
-- 「opusレビュー」
-- 「opus-review」
+- 「claude-review」
 
 ※ agent 名を指定せず単に「レビューして」と言った場合は使用しない。
 
 ## 呼び出し形式
 
 ```
-[session_id=<SESSION_ID>] [output_dir=<PATH>] [reinject_guideline=<true|false>] review_instruction=<レビュー指示>
+[session_id=<SESSION_ID>] [reinject_guideline=<true|false>] review_instruction=<レビュー指示>
 ```
 
 ### 引数
@@ -31,8 +29,7 @@
 |---|---|---|
 | `review_instruction=<レビュー指示>` | 必須 | レビュー指示。原文のまま渡す |
 | `session_id=<SESSION_ID>` | 省略可 | 指摘対応後に継続レビューする場合に前回の session_id を指定する |
-| `output_dir=<PATH>` | 省略可 | ログファイルの保存先ディレクトリ。省略時はリポジトリルートの `.llm-ask/` フォルダに保存される |
-| `reinject_guideline=<true\|false>` | 省略可 | 役割定義・出力ルール・標準レビュー観点などの固定プロンプトを review_instruction の先頭に付加するかどうか。初回レビュー時はこの値に関わらず必ず付加される。継続レビュー時は `true` を指定した場合のみ付加される。`opus-ask` からの継続セッションで初回プロンプトを Opus に与えていない場合に指定する |
+| `reinject_guideline=<true\|false>` | 省略可 | 役割定義・出力ルール・標準レビュー観点などの固定プロンプトを review_instruction の先頭に付加するかどうか。初回レビュー時はこの値に関わらず必ず付加される。継続レビュー時は `true` を指定した場合のみ付加される。`claude-ask` からの継続セッションで初回プロンプトを Opus に与えていない場合に指定する |
 
 `review_instruction` の最もシンプルな例：「未コミットの変更をレビューしてください」。必要に応じて背景情報・対象範囲・比較元ブランチ名・レビュー観点を追加する。
 
@@ -58,7 +55,7 @@
 | セクション | 内容 |
 |---|---|
 | レビューログ / セッション ID | ログファイルパスと session_id |
-| レビュー結果 | Opus の回答原文（全文） |
+| レビュー結果 | Claude の回答原文（全文） |
 | 誤検知と思われる指摘 | 文脈不足・事実誤認・周辺確認不足による誤検知の分類 |
 | 必須対応の指摘 | typo・バグ・検討の余地がない明確な改善点 |
 | 要検討の指摘 | トレードオフがある・意思決定が必要な指摘 |
@@ -97,8 +94,7 @@
 
 ### 保存先
 
-`output_dir` を省略した場合、git リポジトリルート（リポジトリ外ならカレントディレクトリ）配下の `.llm-ask/` に保存される。
-`output_dir` に相対パスを渡した場合も同じ基準ディレクトリからの相対パスになる。
+ログは git リポジトリルート（リポジトリ外ならカレントディレクトリ）配下の `.llm-ask/` に保存される。保存先は変更できない。
 `.llm-ask/` フォルダを新規作成するときは `*` を対象とした `.gitignore` が自動生成される。
 `.llm-ask/` フォルダが既に存在する場合は `.gitignore` の作成/編集は行われない。
 
@@ -108,14 +104,14 @@
 |---|---|
 | ヘッダー | 日時・モード（new / continuation）・ディレクトリ・セッション ID |
 | メッセージ | 送信したレビュー指示原文 |
-| Opus の回答 | Opus からのレビュー結果 |
+| Claude の回答 | Opus モデルからのレビュー結果 |
 | エラー情報 | エラー時のみ。exit code と stderr の内容 |
 
-ログファイル名のパターン：`<YYYYMMDD_HHMMSS_mmm>_<プロジェクト名>_opus-review.md`
+ログファイル名のパターン：`<YYYYMMDD_HHMMSS_mmm>_<プロジェクト名>_claude-review.md`
 
 ### session_id による継続レビュー
 
-ログの `セッションID` 欄の ID を次回呼び出しの `session_id` に渡すと、同じ Opus セッションで追加レビューを依頼できる。opus-ask の session_id も指定可能。
+ログの `セッションID` 欄の ID を次回呼び出しの `session_id` に渡すと、同じ Opus セッションで追加レビューを依頼できる。claude-ask の session_id も指定可能。
 
 ## Claude CLI 実行引数
 
@@ -125,11 +121,24 @@
 |---|---|---|
 | `-p` | — | 非インタラクティブモード（print mode） |
 | `--output-format` | `json` | JSON 形式で出力 |
-| `--model` | `Opus` | Opus モデルを使用 |
+| `--model` | `Opus` | 使用するモデル。`CLAUDE_REVIEW_DEFAULT_MODEL` で変更できる |
+| `--effort` | — | `CLAUDE_REVIEW_DEFAULT_MODEL` で effort を指定した場合のみ付与 |
 | `--dangerously-skip-permissions` | — | 権限確認をスキップ |
 | `--tools` | `Read,Glob,Grep,Bash` | 許可するツール |
 
 `session_id` を指定した場合は `--resume <session_id>` が付加される。
+
+## モデルの指定
+
+環境変数 `CLAUDE_REVIEW_DEFAULT_MODEL` で使用するモデルを指定できる。
+
+| 書式 | 例 | 動作 |
+|---|---|---|
+| `<model>` | `opus` | モデルのみ指定する |
+| `<model>/<effort>` | `opus/high` | モデルと reasoning effort を指定する |
+| 未設定 / 空文字列 | — | 既定の `Opus` を使用する |
+
+指定した値は `claude` の `--model`（model）と `--effort`（effort）にそのまま渡される。プラグイン側で値の妥当性は検証しないため、不正な値を指定した場合は claude 側がエラーを返し、その内容がログの「エラー情報」に記録される。
 
 ## エラー処理
 

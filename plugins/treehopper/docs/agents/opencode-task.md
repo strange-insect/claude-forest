@@ -1,4 +1,4 @@
-# opencode-worker
+# opencode-task
 
 opencode CLI にファイルの変更などを含む作業を依頼し、作業報告を Markdown ログファイルに保存する。
 `session_id` を使用して完了後のセッションに追加作業指示を与えたり、opencode-ask を使用して作業内容の質疑を行うことができる。
@@ -7,8 +7,8 @@ opencode CLI にファイルの変更などを含む作業を依頼し、作業�
 
 | 項目 | 値 |
 |---|---|
-| agent 名 | `opencode-worker` |
-| 実装 | `agents/opencode-worker.py` |
+| agent 名 | `opencode-task` |
+| 実装 | `agents/opencode-task.py` |
 | 使用モデル | `sonnet` |
 | 実行コンテキスト | subagent（独立コンテキスト） |
 
@@ -20,7 +20,7 @@ opencode CLI にファイルの変更などを含む作業を依頼し、作業�
 ## 呼び出し形式
 
 ```
-[session_id=<SESSION_ID>] [output_dir=<PATH>] [reinject_guideline=<true|false>] instruction=<作業指示>
+[session_id=<SESSION_ID>] [reinject_guideline=<true|false>] instruction=<作業指示>
 ```
 
 ### 引数
@@ -30,7 +30,6 @@ opencode CLI にファイルの変更などを含む作業を依頼し、作業�
 | `instruction=<作業指示>` | 必須 | opencode に依頼する作業内容。原文のまま渡す |
 | `session_id=<SESSION_ID>` | 省略可 | 指定すると以前の作業を継続する |
 | `reinject_guideline=<true\|false>` | 省略可 | 固定プロンプト（作業報告の形式指定）を先頭に付加するか。初回は値に関わらず付加される |
-| `output_dir=<PATH>` | 省略可 | ログファイルの保存先ディレクトリ。省略時はリポジトリルートの `.llm-ask/` フォルダに保存される |
 
 ## 親セッションへの応答
 
@@ -46,8 +45,7 @@ opencode が作業ディレクトリを変更している可能性があるた�
 
 ### 保存先
 
-`output_dir` を省略した場合、git リポジトリルート（リポジトリ外ならカレントディレクトリ）配下の `.llm-ask/` に保存される。
-`output_dir` に相対パスを渡した場合も同じ基準ディレクトリからの相対パスになる。
+ログは git リポジトリルート（リポジトリ外ならカレントディレクトリ）配下の `.llm-ask/` に保存される。保存先は変更できない。
 `.llm-ask/` フォルダを新規作成するときは `*` を対象とした `.gitignore` が自動生成される。
 `.llm-ask/` フォルダが既に存在する場合は `.gitignore` の作成/編集は行われない。
 
@@ -60,7 +58,7 @@ opencode が作業ディレクトリを変更している可能性があるた�
 | opencode の回答 | opencode からの作業報告（固定プロンプトで指定した形式） |
 | エラー情報 | エラー時のみ。exit code と stderr の内容 |
 
-ログファイル名のパターン：`<YYYYMMDD_HHMMSS_mmm>_<プロジェクト名>_opencode-worker.md`
+ログファイル名のパターン：`<YYYYMMDD_HHMMSS_mmm>_<プロジェクト名>_opencode-task.md`
 
 ログに記録されるのは opencode の**報告テキスト**であり、実際のファイル変更内容ではない。変更の実体は作業ディレクトリに直接反映されるため、`git status --short --untracked-files=all` / `git diff` で確認する。
 
@@ -77,6 +75,7 @@ opencode CLI は以下の固定引数で起動される。
 |---|---|---|
 | サブコマンド | `run` | 実行モード（非対話。メッセージは stdin から渡す） |
 | `--format` | `json` | イベントを JSON 形式で出力 |
+| `-m` / `--variant` | — | `OPENCODE_TASK_DEFAULT_MODEL` を指定した場合のみ付与 |
 | `--agent` | `build` | opencode の既定エージェント: ファイル編集・コマンド実行が可能 |
 | `--auto` | — | 明示的に拒否されていない権限を自動承認する（非対話実行のため） |
 
@@ -114,6 +113,19 @@ opencode の作業報告は形式が定まらないと呼び出し元に作業�
 
 新しい opencode セッションで作業したい場合は、`opencode-pairing` を再実行してペアリング先を切り替える。
 
+## モデルの指定
+
+環境変数 `OPENCODE_TASK_DEFAULT_MODEL` で使用するモデルを指定できる。
+
+| 書式 | 例 | 動作 |
+|---|---|---|
+| `<model>` | `anthropic/claude-sonnet-4` | モデルのみ指定する |
+| `<model>/<effort>` | `anthropic/claude-sonnet-4/high` | モデルと reasoning effort を指定する |
+| 未設定 / 空文字列 | — | opencode CLI 既定のモデルを使用する |
+
+指定した値は `opencode` の `-m`（model）と `--variant`（effort）にそのまま渡される。プラグイン側で値の妥当性は検証しないため、不正な値を指定した場合は opencode 側がエラーを返し、その内容がログの「エラー情報」に記録される。
+
+opencode のモデル指定は `provider/model` 形式でモデル名自体に `/` を含むため、`/` 区切りが 3 要素以上の場合のみ末尾を effort とみなす。`anthropic/claude-sonnet-4` は model のみ、`anthropic/claude-sonnet-4/high` は model + effort と解釈される。
 ## エラー処理
 
 | 状況 | 動作 |

@@ -27,11 +27,19 @@ opencode との 1問1答・コードレビュー・ファイル書き込みを�
 claude plugin install treehopper@claude-forest
 ```
 
+## 環境変数
+
+| 環境変数 | 対象 agent | 説明 |
+|---------|-----------|------|
+| `OPENCODE_ASK_DEFAULT_MODEL` | `opencode-ask` | 使用するモデル。`<provider/model>` または `<provider/model>/<effort>` 形式。未設定または空文字列の場合は既定モデルを使用する |
+| `OPENCODE_REVIEW_DEFAULT_MODEL` | `opencode-review` | 同上 |
+| `OPENCODE_TASK_DEFAULT_MODEL` | `opencode-task` | 同上 |
+
 ## agent 一覧
 
 | agent 名 | 説明 |
 |---------|------|
 | `opencode-ask` | opencode CLI で opencode と会話する |
 | `opencode-review` | opencode CLI で opencode にコードレビューを依頼する |
-| `opencode-worker` | opencode CLI で opencode にファイル書き込みを含む作業を依頼する |
+| `opencode-task` | opencode CLI で opencode にファイル書き込みを含む作業を依頼する |
 | `opencode-pairing` | 現在の Claude セッションを opencode セッションに 1:1 でペアリングする |

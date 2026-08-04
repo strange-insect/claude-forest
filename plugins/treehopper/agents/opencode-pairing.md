@@ -2,7 +2,7 @@
 name: opencode-pairing
 description: |-
   現在の Claude セッションと opencode セッションを 1:1 でペアリングする。
-  ペアリング後はペアリングされた セッション ID 以外での opencode-ask / opencode-review / opencode-worker が禁止される。
+  ペアリング後はペアリングされた セッション ID 以外での opencode-ask / opencode-review / opencode-task が禁止される。
   ユーザーが「opencodeとペアリング」「opencode-pairing」と言った場合に使用。
 
   呼び出しプロンプト形式: プトンプトなし
@@ -68,7 +68,7 @@ grep -q "^CLAUDE: ${CLAUDE_SESSION_ID}, OPENCODE: ${OPENCODE_SID}$" "${PAIRING_F
 
 ```
 ペアリングを実施しました。
-以下の Session ID 以外での opencode-ask, opencode-review, opencode-worker は禁止されます。
+以下の Session ID 以外での opencode-ask, opencode-review, opencode-task は禁止されます。
 opencode Session ID: <手順 2 の OPENCODE_SESSION_ID の値>
 ```
 
