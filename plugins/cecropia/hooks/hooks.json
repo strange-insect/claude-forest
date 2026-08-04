@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/opus-pairing.sh\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/claude-pairing.sh\"",
             "timeout": 5
           }
         ]

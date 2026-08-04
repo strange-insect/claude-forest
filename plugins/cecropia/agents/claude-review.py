@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""opus-review: claude -p + Opus モデルでコードレビューを実行し、結果を JSON で返す。
+"""claude-review: claude -p + Opus モデルでコードレビューを実行し、結果を JSON で返す。
 
 呼び出し:
-    opus-review.py [--session-id UUID] [--inject-fixed-prompt] --message "レビュー指示"
-    opus-review.py [--session-id UUID] [--inject-fixed-prompt]  # stdin からメッセージを読む
+    claude-review.py [--session-id UUID] [--inject-fixed-prompt] --message "レビュー指示"
+    claude-review.py [--session-id UUID] [--inject-fixed-prompt]  # stdin からメッセージを読む
 
 新規セッション時は必ず固定プロンプト（役割・出力ルール・標準観点）を先頭に付加する。
 継続セッション時は通常付加しないが、`--inject-fixed-prompt` 指定時のみ付加する。
@@ -23,11 +23,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import _ask_common as common  # noqa: E402
 
-_spec = _ilu.spec_from_file_location("_opus_ask", Path(__file__).resolve().parent / "opus-ask.py")
+_spec = _ilu.spec_from_file_location("_claude_ask", Path(__file__).resolve().parent / "claude-ask.py")
 _m = _ilu.module_from_spec(_spec)
 _spec.loader.exec_module(_m)  # type: ignore[union-attr]
-extract_opus_session_id = _m.extract_opus_session_id
-extract_opus_result = _m.extract_opus_result
+extract_claude_session_id = _m.extract_claude_session_id
+extract_claude_result = _m.extract_claude_result
 
 ALLOWED_TOOLS = "Read,Glob,Grep,Bash"
 
@@ -77,8 +77,8 @@ def main() -> int:
     message, session_id, flags = common.parse_args(sys.argv[1:])
     prompt = build_prompt(message, session_id, inject_fixed_prompt=flags.get("inject_fixed_prompt", False))
 
-    tmp_output = common.make_temp("opus-review-output-")
-    tmp_stderr = common.make_temp("opus-review-err-")
+    tmp_output = common.make_temp("claude-review-output-")
+    tmp_stderr = common.make_temp("claude-review-err-")
 
     try:
         cmd = [
@@ -108,18 +108,18 @@ def main() -> int:
             )
         exit_code = proc.returncode
 
-        extracted_id = extract_opus_session_id(tmp_output)
+        extracted_id = extract_claude_session_id(tmp_output)
         if extracted_id == "unresolved" and session_id:
             extracted_id = session_id
 
         if exit_code != 0:
-            answer = extract_opus_result(tmp_output).strip() or "（回答の取得に失敗しました）"
+            answer = extract_claude_result(tmp_output).strip() or "（回答の取得に失敗しました）"
             error_detail = common.format_error_detail(exit_code, tmp_stderr, tmp_output)
             sid = extracted_id if extracted_id != "unresolved" else (session_id or "unresolved")
             common.emit_result(sid, answer, "error", exit_code, error_detail)
             return 1
 
-        answer = extract_opus_result(tmp_output) or "（レビュー結果の取得に失敗しました - 出力が空です）"
+        answer = extract_claude_result(tmp_output) or "（レビュー結果の取得に失敗しました - 出力が空です）"
         common.emit_result(extracted_id, answer, "success", 0)
         return 0
     finally:

@@ -1,8 +1,8 @@
 ---
-name: opus-review
+name: claude-review
 description: |-
   Opusモデルでコードレビューを実施する。
-  ユーザーが「opusでレビュー」「opusレビュー」「opus-review」と言った場合に使用。
+  ユーザーが claude-review の使用を明示的に指定した場合に使用。
   agent 名を指定せず単に「レビューして」と言った場合は使用しない。
 
   呼び出しプロンプト形式: "[session_id=<text>] [reinject_guideline=<true|false>] review_instruction=<レビュー指示>"
@@ -14,7 +14,7 @@ description: |-
   - 役割定義・出力ルール・標準レビュー観点などの固定プロンプトを review_instruction の先頭に付加するかどうか
   - 初回レビュー（session_id 未指定時）は値に関わらず必ず付加される
   - 継続レビュー（session_id 指定時）は true を指定した場合のみ付加される
-  - `opus-ask` からの継続セッションで初回プロンプトを Opus に与えていない場合に指定する
+  - `claude-ask` からの継続セッションで初回プロンプトを Opus に与えていない場合に指定する
 
   review_instruction [REQUIRED]:
   - 最もシンプルな指定は「未コミットの変更をレビューしてください」
@@ -61,7 +61,7 @@ model: sonnet
 export CLAUDE_PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT}"
 export CLAUDE_PLUGIN_DATA="${CLAUDE_PLUGIN_DATA}"
 "${CLAUDE_PLUGIN_ROOT}/bin/python-wrapper.sh" "${CLAUDE_PLUGIN_ROOT}/bin/ask-pipeline.py" \
-  --agent opus-review \
+  --agent claude-review \
   --lock-prefix claude \
   [--session-id "<SESSION_ID>"] \
   [--inject-fixed-prompt] \
@@ -93,7 +93,7 @@ EOF
 
 ## レビュー結果
 
-<!-- ログの「Opus の回答」セクションの内容を提示する。
+<!-- ログの「Claude の回答」セクションの内容を提示する。
 注意:
 - 以下のルールを厳守すること
     - 原文のまま提示すること

@@ -1,4 +1,4 @@
-# opus-ask
+# claude-ask
 
 別セッションの Claude Opus に質問を送り、回答を Markdown ログファイルに保存する。`session_id` を使って複数ターンの会話を継続できる。
 
@@ -6,17 +6,14 @@
 
 | 項目 | 値 |
 |---|---|
-| agent 名 | `opus-ask` |
-| 実装 | `agents/opus-ask.py` |
+| agent 名 | `claude-ask` |
+| 実装 | `agents/claude-ask.py` |
 | 使用モデル | `sonnet` |
 | 実行コンテキスト | subagent（独立コンテキスト） |
 
 ## トリガーフレーズ
 
-- 「opusに聞いて」
-- 「opus ask」
-- 「opus-ask」
-- 「opusで調べて」
+- 「claude-ask」
 
 ## 呼び出し形式
 
@@ -65,15 +62,15 @@ Opus セッションには以下のツールのみ許可される。
 |---|---|
 | ヘッダー | 日時・モード（new / continuation）・ディレクトリ・セッション ID |
 | メッセージ | 送信したメッセージ原文 |
-| Opus の回答 | Opus からの回答 |
+| Claude の回答 | Opus モデルからの回答 |
 | エラー情報 | エラー時のみ。exit code と stderr の内容 |
 
-ログファイル名のパターン：`<YYYYMMDD_HHMMSS_mmm>_<プロジェクト名>_opus-ask.md`
+ログファイル名のパターン：`<YYYYMMDD_HHMMSS_mmm>_<プロジェクト名>_claude-ask.md`
 
 ### session_id による会話継続
 
 ログの `セッションID` 欄に記録されている ID を次回呼び出しの `session_id` に渡すと、同じ Opus セッションで会話を続けられる。
-`session_id` は opus-review でも使用可能。
+`session_id` は claude-review でも使用可能。
 
 ## Claude CLI 実行引数
 

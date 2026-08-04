@@ -8,7 +8,7 @@
 |---|---|---|
 | `SessionStart` | セッション開始時 | `CLAUDE_SESSION_ID` を環境変数として後続プロセスに継承させる |
 | `SubagentStart` | subagent 起動時 | `CLAUDE_PLUGIN_ROOT` / `CLAUDE_PLUGIN_DATA` を additionalContext 経由で subagent に伝える |
-| `PreToolUse` | Agent ツール呼び出し前 | ペアリング済みの場合、指定外のセッション ID での `opus-ask` / `opus-review` 呼び出しをブロックする |
+| `PreToolUse` | Agent ツール呼び出し前 | ペアリング済みの場合、指定外のセッション ID での `claude-ask` / `claude-review` 呼び出しをブロックする |
 
 ## SessionStart
 
@@ -23,10 +23,10 @@ subagent 起動時に発火し、`CLAUDE_PLUGIN_ROOT` と `CLAUDE_PLUGIN_DATA` �
 
 ※ Windows パスの `\` は JSON 出力時に `\\` にエスケープされる。
 
-## PreToolUse（opus-pairing）
+## PreToolUse（claude-pairing）
 
-`opus-pairing` agent によるペアリング実行後に有効になる。
+`claude-pairing` agent によるペアリング実行後に有効になる。
 
-`opus-ask` / `opus-review` の Agent 呼び出し時に発火し、プロンプトにペアリング済みの Opus セッション ID が含まれているかを検証する。含まれていない場合は呼び出しをブロックし、正しい Session ID を通知する。
+`claude-ask` / `claude-review` の Agent 呼び出し時に発火し、プロンプトにペアリング済みの Opus セッション ID が含まれているかを検証する。含まれていない場合は呼び出しをブロックし、正しい Session ID を通知する。
 
-ペアリングファイル（`$CLAUDE_PLUGIN_DATA/opus-pairing.txt`）が存在しない、または現在の `CLAUDE_SESSION_ID` に対応するエントリがない場合はブロックしない。
+ペアリングファイル（`$CLAUDE_PLUGIN_DATA/claude-pairing.txt`）が存在しない、または現在の `CLAUDE_SESSION_ID` に対応するエントリがない場合はブロックしない。

@@ -1,9 +1,9 @@
 ---
-name: opus-ask
+name: claude-ask
 description: |-
   1問1答形式で別セッションの Opus と会話する。
   session_id を使った会話継続に対応するため、複数ターンの会話/議論や追加指示も可能。
-  ユーザーが「opusに聞いて」「opus ask」「opus-ask」「opusで調べて」と言った場合に使用。
+  ユーザーが claude-ask の使用を明示的に指定した場合に使用。
 
   呼び出しプロンプト形式: "[session_id=<text>] message_to_send=<メッセージ>"
 
@@ -45,7 +45,7 @@ model: sonnet
 export CLAUDE_PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT}"
 export CLAUDE_PLUGIN_DATA="${CLAUDE_PLUGIN_DATA}"
 "${CLAUDE_PLUGIN_ROOT}/bin/python-wrapper.sh" "${CLAUDE_PLUGIN_ROOT}/bin/ask-pipeline.py" \
-  --agent opus-ask \
+  --agent claude-ask \
   --lock-prefix claude \
   [--session-id "<SESSION_ID>"] \
   <<'EOF'

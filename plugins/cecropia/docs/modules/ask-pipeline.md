@@ -1,6 +1,6 @@
 # ask-pipeline
 
-`opus-ask` / `opus-review` の共通実行パイプライン。
+`claude-ask` / `claude-review` の共通実行パイプライン。
 agent から呼ばれ、AI 実行・ログ生成・ファイル配置の一連の処理を順に実行する。
 
 ## 基本情報
@@ -13,7 +13,7 @@ agent から呼ばれ、AI 実行・ログ生成・ファイル配置の一連�
 
 | オプション | 必須 | 説明 |
 |---|---|---|
-| `--agent <name>` | 必須 | 実行する agent 名（`opus-ask` / `opus-review`） |
+| `--agent <name>` | 必須 | 実行する agent 名（`claude-ask` / `claude-review`） |
 | `--message <text>` | 必須（または stdin） | 送信メッセージ |
 | `--session-id <UUID>` | 省略可 | セッション継続時に指定 |
 | `--lock-prefix <text>` | 省略可 | 排他ロックキーのプレフィックス。省略時は `--agent` の値を使用 |
@@ -58,6 +58,6 @@ Step 1 で生成される JSON ファイルは、Step 2 の Markdown 生成後�
 
 `--session-id` が指定された場合、`${CLAUDE_PLUGIN_DATA}/locks/<lock_prefix>_<session_id>.lock` を取得してから処理を開始する。`<lock_prefix>` は `--lock-prefix` で指定した値、省略時は `--agent` の値。同じロックを取得済みのプロセスが存在する場合、後発プロセスはエラーで即終了する。
 
-`--lock-prefix` を使うと複数の agent を同一ロックキーでグループ化できる。例えば `opus-ask` と `opus-review` に `--lock-prefix opus` を指定すると、同じ session_id を持つ両者の同時実行が防止される。
+`--lock-prefix` を使うと複数の agent を同一ロックキーでグループ化できる。例えば `claude-ask` と `claude-review` に `--lock-prefix claude` を指定すると、同じ session_id を持つ両者の同時実行が防止される。
 
 ※ ロックは OS レベルの file lock（POSIX: `fcntl.flock`、Windows: `LockFileEx`）で実装されており、プロセスが kill されても OS が自動解放する。

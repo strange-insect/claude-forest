@@ -1,4 +1,4 @@
-# opus-review
+# claude-review
 
 別セッションの Claude Opus にコードレビューを依頼し、結果を Markdown ログファイルに保存する。`session_id` を使って指摘対応の追加レビューを同一セッションで継続できる。
 
@@ -6,16 +6,14 @@
 
 | 項目 | 値 |
 |---|---|
-| agent 名 | `opus-review` |
-| 実装 | `agents/opus-review.py` |
+| agent 名 | `claude-review` |
+| 実装 | `agents/claude-review.py` |
 | 使用モデル | `sonnet` |
 | 実行コンテキスト | subagent（独立コンテキスト） |
 
 ## トリガーフレーズ
 
-- 「opusでレビュー」
-- 「opusレビュー」
-- 「opus-review」
+- 「claude-review」
 
 ※ agent 名を指定せず単に「レビューして」と言った場合は使用しない。
 
@@ -31,7 +29,7 @@
 |---|---|---|
 | `review_instruction=<レビュー指示>` | 必須 | レビュー指示。原文のまま渡す |
 | `session_id=<SESSION_ID>` | 省略可 | 指摘対応後に継続レビューする場合に前回の session_id を指定する |
-| `reinject_guideline=<true\|false>` | 省略可 | 役割定義・出力ルール・標準レビュー観点などの固定プロンプトを review_instruction の先頭に付加するかどうか。初回レビュー時はこの値に関わらず必ず付加される。継続レビュー時は `true` を指定した場合のみ付加される。`opus-ask` からの継続セッションで初回プロンプトを Opus に与えていない場合に指定する |
+| `reinject_guideline=<true\|false>` | 省略可 | 役割定義・出力ルール・標準レビュー観点などの固定プロンプトを review_instruction の先頭に付加するかどうか。初回レビュー時はこの値に関わらず必ず付加される。継続レビュー時は `true` を指定した場合のみ付加される。`claude-ask` からの継続セッションで初回プロンプトを Opus に与えていない場合に指定する |
 
 `review_instruction` の最もシンプルな例：「未コミットの変更をレビューしてください」。必要に応じて背景情報・対象範囲・比較元ブランチ名・レビュー観点を追加する。
 
@@ -57,7 +55,7 @@
 | セクション | 内容 |
 |---|---|
 | レビューログ / セッション ID | ログファイルパスと session_id |
-| レビュー結果 | Opus の回答原文（全文） |
+| レビュー結果 | Claude の回答原文（全文） |
 | 誤検知と思われる指摘 | 文脈不足・事実誤認・周辺確認不足による誤検知の分類 |
 | 必須対応の指摘 | typo・バグ・検討の余地がない明確な改善点 |
 | 要検討の指摘 | トレードオフがある・意思決定が必要な指摘 |
@@ -106,14 +104,14 @@
 |---|---|
 | ヘッダー | 日時・モード（new / continuation）・ディレクトリ・セッション ID |
 | メッセージ | 送信したレビュー指示原文 |
-| Opus の回答 | Opus からのレビュー結果 |
+| Claude の回答 | Opus モデルからのレビュー結果 |
 | エラー情報 | エラー時のみ。exit code と stderr の内容 |
 
-ログファイル名のパターン：`<YYYYMMDD_HHMMSS_mmm>_<プロジェクト名>_opus-review.md`
+ログファイル名のパターン：`<YYYYMMDD_HHMMSS_mmm>_<プロジェクト名>_claude-review.md`
 
 ### session_id による継続レビュー
 
-ログの `セッションID` 欄の ID を次回呼び出しの `session_id` に渡すと、同じ Opus セッションで追加レビューを依頼できる。opus-ask の session_id も指定可能。
+ログの `セッションID` 欄の ID を次回呼び出しの `session_id` に渡すと、同じ Opus セッションで追加レビューを依頼できる。claude-ask の session_id も指定可能。
 
 ## Claude CLI 実行引数
 

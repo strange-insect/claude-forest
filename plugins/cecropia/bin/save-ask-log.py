@@ -48,7 +48,7 @@ def main() -> int:
     exit_code = data.get("exit_code", 0)
     error_detail = data.get("error_detail", "")
 
-    label_map = {"codex": "Codex", "opus": "Opus"}
+    label_map = {"claude": "Claude"}
     label = label_map.get(model, model)
 
     type_map = {"ask": "Ask", "review": "Review"}

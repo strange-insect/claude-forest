@@ -1,9 +1,9 @@
 ---
-name: opus-pairing
+name: claude-pairing
 description: |-
   現在の Claude セッションと Opus セッションを 1:1 でペアリングする。
-  ペアリング後はペアリングされた セッション ID 以外での opus-ask / opus-review が禁止される。
-  ユーザーが「opusとペアリング」「opus-pairing」と言った場合に使用。
+  ペアリング後はペアリングされた セッション ID 以外での claude-ask / claude-review が禁止される。
+  ユーザーが claude-pairing の使用を明示的に指定した場合に使用。
 
   呼び出しプロンプト形式: プトンプトなし
 tools: Bash
@@ -12,14 +12,14 @@ model: sonnet
 
 ## エージェントの役割
 
-opus-ask パイプラインで Opus に挨拶を送り、発行されたセッション ID を
-`CLAUDE_PLUGIN_DATA/opus-pairing.txt` に記録する。
+claude-ask パイプラインで Opus に挨拶を送り、発行されたセッション ID を
+`CLAUDE_PLUGIN_DATA/claude-pairing.txt` に記録する。
 
 ## 手順
 
 **環境またはツールの問題で手順が遂行できない場合はその旨を応答し処理を終了する。代替手段での作業続行は禁止する。**
 
-### 1. opus-ask パイプライン実行
+### 1. claude-ask パイプライン実行
 
 依頼した作業の規模によっては応答に数分以上の時間がかかる可能性があるためフォアグラウンド実行のタイムアウト時間を最大にして実行する。
 サブエージェントからのBashバックグラウンド実行は不具合があるため必ずフォアグラウンドで実行すること。
@@ -32,7 +32,7 @@ opus-ask パイプラインで Opus に挨拶を送り、発行されたセッ�
 export CLAUDE_PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT}"
 export CLAUDE_PLUGIN_DATA="${CLAUDE_PLUGIN_DATA}"
 "${CLAUDE_PLUGIN_ROOT}/bin/python-wrapper.sh" "${CLAUDE_PLUGIN_ROOT}/bin/ask-pipeline.py" \
-  --agent opus-ask \
+  --agent claude-ask \
   --lock-prefix claude <<'EOF'
 こんにちは、私は別セッションのClaudeです
 EOF
@@ -46,7 +46,7 @@ EOF
 ```bash
 export CLAUDE_PLUGIN_DATA="${CLAUDE_PLUGIN_DATA}"
 
-PAIRING_FILE="${CLAUDE_PLUGIN_DATA}/opus-pairing.txt"
+PAIRING_FILE="${CLAUDE_PLUGIN_DATA}/claude-pairing.txt"
 PAIRING_FILE_TMP="${PAIRING_FILE}.tmp"
 if [ -f "${PAIRING_FILE}" ]; then cp "${PAIRING_FILE}" "${PAIRING_FILE_TMP}"; else touch "${PAIRING_FILE_TMP}"; fi
 
@@ -68,12 +68,12 @@ grep -q "^CLAUDE: ${CLAUDE_SESSION_ID}, OPUS: ${OPUS_SID}$" "${PAIRING_FILE}" \
 
 ```
 ペアリングを実施しました。
-以下の Session ID 以外での opus-ask, opus-review は禁止されます。
+以下の Session ID 以外での claude-ask, claude-review は禁止されます。
 Opus Session ID: <手順 2 の OPUS_SESSION_ID の値>
 ```
 
 #### 確認結果が "PAIRING_FAILED" の場合
 
 ```
-ペアリングに失敗しました。opus-pairing をもう一度実行してください。
+ペアリングに失敗しました。claude-pairing をもう一度実行してください。
 ```

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""opus-ask: claude -p + Opus モデルで 1問1答形式の Q&A を実行し、結果を JSON で返す。
+"""claude-ask: claude -p + Opus モデルで 1問1答形式の Q&A を実行し、結果を JSON で返す。
 
 呼び出し:
-    opus-ask.py [--session-id UUID] --message "質問テキスト"
-    opus-ask.py [--session-id UUID]  # stdin からメッセージを読む
+    claude-ask.py [--session-id UUID] --message "質問テキスト"
+    claude-ask.py [--session-id UUID]  # stdin からメッセージを読む
 
 Tools: --tools で Write/Edit を無効化し Read/Glob/Grep/Bash/WebSearch/WebFetch のみを許可する。
 ただし Bash 経由で `cat > file` 等の書き込みは可能なので、信頼できないリポジトリでの利用には注意。
@@ -23,7 +23,7 @@ import _ask_common as common  # noqa: E402
 ALLOWED_TOOLS = "Read,Glob,Grep,Bash,WebSearch,WebFetch"
 
 
-def extract_opus_session_id(json_file: Path) -> str:
+def extract_claude_session_id(json_file: Path) -> str:
     """`claude -p --output-format json` 出力から .session_id を抽出。"""
     if not json_file.exists():
         return "unresolved"
@@ -39,7 +39,7 @@ def extract_opus_session_id(json_file: Path) -> str:
     return sid if sid else "unresolved"
 
 
-def extract_opus_result(json_file: Path) -> str:
+def extract_claude_result(json_file: Path) -> str:
     """`claude -p --output-format json` 出力から .result を抽出。"""
     if not json_file.exists():
         return ""
@@ -70,8 +70,8 @@ def main() -> int:
     message, session_id, _flags = common.parse_args(sys.argv[1:])
     prompt = build_prompt(message, session_id)
 
-    tmp_output = common.make_temp("opus-ask-output-")
-    tmp_stderr = common.make_temp("opus-ask-err-")
+    tmp_output = common.make_temp("claude-ask-output-")
+    tmp_stderr = common.make_temp("claude-ask-err-")
 
     try:
         cmd = [
@@ -101,18 +101,18 @@ def main() -> int:
             )
         exit_code = proc.returncode
 
-        extracted_id = extract_opus_session_id(tmp_output)
+        extracted_id = extract_claude_session_id(tmp_output)
         if extracted_id == "unresolved" and session_id:
             extracted_id = session_id
 
         if exit_code != 0:
-            answer = extract_opus_result(tmp_output).strip() or "（回答の取得に失敗しました）"
+            answer = extract_claude_result(tmp_output).strip() or "（回答の取得に失敗しました）"
             error_detail = common.format_error_detail(exit_code, tmp_stderr, tmp_output)
             sid = extracted_id if extracted_id != "unresolved" else (session_id or "unresolved")
             common.emit_result(sid, answer, "error", exit_code, error_detail)
             return 1
 
-        answer = extract_opus_result(tmp_output) or "（回答の取得に失敗しました - 出力が空です）"
+        answer = extract_claude_result(tmp_output) or "（回答の取得に失敗しました - 出力が空です）"
         common.emit_result(extracted_id, answer, "success", 0)
         return 0
     finally:

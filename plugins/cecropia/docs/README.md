@@ -35,9 +35,9 @@ claude plugin install cecropia@claude-forest
 
 | agent 名 | 説明 |
 |---------|------|
-| `opus-ask` | 別セッションのOpusモデルと会話する |
-| `opus-review` | 別セッションの Claude Opus モデルでコードレビューを行う |
-| `opus-pairing` | 現在の Claude セッションを Opus セッションに 1:1 でペアリングする |
+| `claude-ask` | 別セッションのOpusモデルと会話する |
+| `claude-review` | 別セッションの Claude Opus モデルでコードレビューを行う |
+| `claude-pairing` | 現在の Claude セッションを Opus セッションに 1:1 でペアリングする |
 | `get-pr-info` | GitHub PR の情報を取得する |
 | `plant-uml` | PlantUML ソースコードと 画像(Kroki URL) の相互変換、ソースコードテキスト・Markdownのコードスニペットに対応 |
 | `export-session` | Claude Code のセッション会話全文を Markdown ファイルにエクスポートする |
