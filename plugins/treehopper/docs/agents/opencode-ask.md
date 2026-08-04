@@ -71,6 +71,7 @@ opencode CLI は以下の固定引数で起動される。
 |---|---|---|
 | サブコマンド | `run` | 実行モード（非対話。メッセージは stdin から渡す） |
 | `--format` | `json` | イベントを JSON 形式で出力 |
+| `-m` / `--variant` | — | `OPENCODE_ASK_DEFAULT_MODEL` を指定した場合のみ付与 |
 | `--agent` | `plan` | opencode の plan エージェント: `edit` 権限が既定で `deny` |
 
 `session_id` を指定した場合は `--session <session_id>` が付加される。
@@ -87,6 +88,19 @@ codex CLI の `--sandbox read-only` は OS レベルで書き込みを遮断す�
 
 opencode には codex CLI の `--output-last-message` に相当するオプションが無いため、回答は `--format json` の出力から `type == "text"` イベントを messageID ごとにまとめ、最後の messageID 分を組み立てて取得する。セッション ID も同出力の `sessionID` から取得する。
 
+## モデルの指定
+
+環境変数 `OPENCODE_ASK_DEFAULT_MODEL` で使用するモデルを指定できる。
+
+| 書式 | 例 | 動作 |
+|---|---|---|
+| `<model>` | `anthropic/claude-sonnet-4` | モデルのみ指定する |
+| `<model>/<effort>` | `anthropic/claude-sonnet-4/high` | モデルと reasoning effort を指定する |
+| 未設定 / 空文字列 | — | opencode CLI 既定のモデルを使用する |
+
+指定した値は `opencode` の `-m`（model）と `--variant`（effort）にそのまま渡される。プラグイン側で値の妥当性は検証しないため、不正な値を指定した場合は opencode 側がエラーを返し、その内容がログの「エラー情報」に記録される。
+
+opencode のモデル指定は `provider/model` 形式でモデル名自体に `/` を含むため、`/` 区切りが 3 要素以上の場合のみ末尾を effort とみなす。`anthropic/claude-sonnet-4` は model のみ、`anthropic/claude-sonnet-4/high` は model + effort と解釈される。
 ## エラー処理
 
 | 状況 | 動作 |

@@ -32,6 +32,13 @@ agent / skill ごとに使用する外部コマンドが異なる。利用する
 claude plugin install cecropia@claude-forest
 ```
 
+## 環境変数
+
+| 環境変数 | 対象 agent | 説明 |
+|---------|-----------|------|
+| `CLAUDE_ASK_DEFAULT_MODEL` | `claude-ask` | 使用するモデル。`<model>` または `<model>/<effort>` 形式。未設定または空文字列の場合は既定モデルを使用する |
+| `CLAUDE_REVIEW_DEFAULT_MODEL` | `claude-review` | 同上 |
+
 ## agent 一覧
 
 | agent 名 | 説明 |

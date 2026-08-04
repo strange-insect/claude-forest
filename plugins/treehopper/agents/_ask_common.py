@@ -30,6 +30,26 @@ def resolve_command(name: str) -> tuple[str, bool]:
     return resolved, False
 
 
+def resolve_model(env_var: str, model_contains_slash: bool = False) -> tuple[str, str]:
+    """`<model>[/<effort>]` 形式の環境変数を (model, effort) に分解する。
+
+    未設定または空文字列の場合は ("", "") を返す。呼び出し側はその場合に
+    CLI 既定または agent 固有の既定モデルを使う。値の妥当性は検証せず、
+    そのまま CLI に渡してエラー報告を CLI 側に委ねる。
+
+    model_contains_slash=True の CLI（opencode の `provider/model` 形式）では
+    モデル名自体に `/` を含むため、区切りが 3 要素以上の場合のみ末尾を effort と
+    みなす（`anthropic/claude-sonnet-4/high` → model=anthropic/claude-sonnet-4, effort=high）。
+    """
+    raw = os.environ.get(env_var, "").strip()
+    if not raw:
+        return "", ""
+    parts = raw.split("/")
+    min_parts = 3 if model_contains_slash else 2
+    if len(parts) >= min_parts:
+        return "/".join(parts[:-1]), parts[-1]
+    return raw, ""
+
 def parse_args(argv: list[str]) -> tuple[str, str, dict[str, bool]]:
     """--message / --session-id / --inject-fixed-prompt / stdin から (message, session_id, flags) を取り出す。
 

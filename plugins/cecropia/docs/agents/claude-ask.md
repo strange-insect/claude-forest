@@ -80,11 +80,24 @@ Opus セッションには以下のツールのみ許可される。
 |---|---|---|
 | `-p` | — | 非インタラクティブモード（print mode） |
 | `--output-format` | `json` | JSON 形式で出力 |
-| `--model` | `Opus` | Opus モデルを使用 |
+| `--model` | `Opus` | 使用するモデル。`CLAUDE_ASK_DEFAULT_MODEL` で変更できる |
+| `--effort` | — | `CLAUDE_ASK_DEFAULT_MODEL` で effort を指定した場合のみ付与 |
 | `--dangerously-skip-permissions` | — | 権限確認をスキップ |
 | `--tools` | `Read,Glob,Grep,Bash,WebSearch,WebFetch` | 許可するツール |
 
 `session_id` を指定した場合は `--resume <session_id>` が付加される。
+
+## モデルの指定
+
+環境変数 `CLAUDE_ASK_DEFAULT_MODEL` で使用するモデルを指定できる。
+
+| 書式 | 例 | 動作 |
+|---|---|---|
+| `<model>` | `opus` | モデルのみ指定する |
+| `<model>/<effort>` | `opus/high` | モデルと reasoning effort を指定する |
+| 未設定 / 空文字列 | — | 既定の `Opus` を使用する |
+
+指定した値は `claude` の `--model`（model）と `--effort`（effort）にそのまま渡される。プラグイン側で値の妥当性は検証しないため、不正な値を指定した場合は claude 側がエラーを返し、その内容がログの「エラー情報」に記録される。
 
 ## エラー処理
 

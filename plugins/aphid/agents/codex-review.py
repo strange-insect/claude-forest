@@ -71,6 +71,8 @@ def main() -> int:
     message, session_id, flags = common.parse_args(sys.argv[1:])
     prompt = build_prompt(message, session_id, inject_fixed_prompt=flags.get("inject_fixed_prompt", False))
 
+    model, effort = common.resolve_model("CODEX_REVIEW_DEFAULT_MODEL")
+
     tmp_jsonl = common.make_temp("codex-review-jsonl-")
     tmp_msg = common.make_temp("codex-review-msg-")
     tmp_stderr = common.make_temp("codex-review-err-")
@@ -82,6 +84,10 @@ def main() -> int:
             "read-only",
             "--json",
         ]
+        if model:
+            codex_options += ["-m", model]
+        if effort:
+            codex_options += ["-c", f"model_reasoning_effort={effort}"]
         cmd = [codex_path, "exec", *codex_options]
         if session_id:
             cmd += ["resume", session_id]

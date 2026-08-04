@@ -84,6 +84,8 @@ def main() -> int:
     message, session_id, _flags = common.parse_args(sys.argv[1:])
     prompt = build_prompt(message, session_id)
 
+    model, effort = common.resolve_model("OPENCODE_ASK_DEFAULT_MODEL", model_contains_slash=True)
+
     tmp_jsonl = common.make_temp("opencode-ask-jsonl-")
     tmp_stderr = common.make_temp("opencode-ask-err-")
 
@@ -94,6 +96,10 @@ def main() -> int:
             "--agent",
             "plan",
         ]
+        if model:
+            opencode_options += ["-m", model]
+        if effort:
+            opencode_options += ["--variant", effort]
         cmd = [opencode_path, "run", *opencode_options]
         if session_id:
             cmd += ["--session", session_id]

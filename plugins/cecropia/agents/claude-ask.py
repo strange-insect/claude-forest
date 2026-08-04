@@ -70,6 +70,8 @@ def main() -> int:
     message, session_id, _flags = common.parse_args(sys.argv[1:])
     prompt = build_prompt(message, session_id)
 
+    model, effort = common.resolve_model("CLAUDE_ASK_DEFAULT_MODEL")
+
     tmp_output = common.make_temp("claude-ask-output-")
     tmp_stderr = common.make_temp("claude-ask-err-")
 
@@ -80,8 +82,10 @@ def main() -> int:
             "--output-format",
             "json",
             "--model",
-            "Opus",
+            model or "Opus",
         ]
+        if effort:
+            cmd += ["--effort", effort]
         if session_id:
             cmd += ["--resume", session_id]
         cmd += [

@@ -98,6 +98,8 @@ def main() -> int:
     message, session_id, flags = common.parse_args(sys.argv[1:])
     prompt = build_prompt(message, session_id, inject_fixed_prompt=flags.get("inject_fixed_prompt", False))
 
+    model, effort = common.resolve_model("OPENCODE_TASK_DEFAULT_MODEL", model_contains_slash=True)
+
     tmp_jsonl = common.make_temp("opencode-task-jsonl-")
     tmp_stderr = common.make_temp("opencode-task-err-")
 
@@ -109,6 +111,10 @@ def main() -> int:
             "build",
             "--auto",
         ]
+        if model:
+            opencode_options += ["-m", model]
+        if effort:
+            opencode_options += ["--variant", effort]
         cmd = [opencode_path, "run", *opencode_options]
         if session_id:
             cmd += ["--session", session_id]

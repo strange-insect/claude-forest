@@ -73,8 +73,21 @@ Codex CLI は以下の固定引数で起動される。
 | `--skip-git-repo-check` | — | git リポジトリ外でも実行を許可 |
 | `--sandbox` | `read-only` | サンドボックス: ファイル読み取りのみ許可 |
 | `--json` | — | JSON 形式で出力 |
+| `-m` / `-c model_reasoning_effort=` | — | `CODEX_ASK_DEFAULT_MODEL` を指定した場合のみ付与 |
 
 `session_id` を指定した場合は `exec` の後に `resume <session_id>` が付加される。
+
+## モデルの指定
+
+環境変数 `CODEX_ASK_DEFAULT_MODEL` で使用するモデルを指定できる。
+
+| 書式 | 例 | 動作 |
+|---|---|---|
+| `<model>` | `gpt-5` | モデルのみ指定する |
+| `<model>/<effort>` | `gpt-5/high` | モデルと reasoning effort を指定する |
+| 未設定 / 空文字列 | — | codex CLI 既定のモデルを使用する |
+
+指定した値は `codex` の `-m`（model）と `-c model_reasoning_effort=`（effort）にそのまま渡される。プラグイン側で値の妥当性は検証しないため、不正な値を指定した場合は codex 側がエラーを返し、その内容がログの「エラー情報」に記録される。
 
 ## エラー処理
 
