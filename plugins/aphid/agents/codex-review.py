@@ -2,8 +2,8 @@
 """codex-review: OpenAI Codex CLI でコードレビューを実行し、結果を JSON で返す。
 
 呼び出し:
-    codex-review.py [--session-id UUID] [--inject-fixed-prompt] --message "レビュー指示"
-    codex-review.py [--session-id UUID] [--inject-fixed-prompt]  # stdin からメッセージを読む
+    codex-review.py [--session-id UUID] [--inject-fixed-prompt] [--model MODEL] [--effort EFFORT] --message "レビュー指示"
+    codex-review.py [--session-id UUID] [--inject-fixed-prompt] [--model MODEL] [--effort EFFORT]  # stdin からメッセージを読む
 
 新規セッション時は必ず固定プロンプト（役割・出力ルール・標準観点）を先頭に付加する。
 継続セッション時は通常付加しないが、`--inject-fixed-prompt` 指定時のみ付加する。
@@ -68,10 +68,10 @@ def main() -> int:
         )
         return 1
 
-    message, session_id, flags = common.parse_args(sys.argv[1:])
+    message, session_id, flags, overrides = common.parse_args(sys.argv[1:])
     prompt = build_prompt(message, session_id, inject_fixed_prompt=flags.get("inject_fixed_prompt", False))
 
-    model, effort = common.resolve_model("CODEX_REVIEW_DEFAULT_MODEL")
+    model, effort = common.resolve_model("CODEX_REVIEW_DEFAULT_MODEL", overrides=overrides)
 
     tmp_jsonl = common.make_temp("codex-review-jsonl-")
     tmp_msg = common.make_temp("codex-review-msg-")

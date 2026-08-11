@@ -30,18 +30,16 @@ def resolve_command(name: str) -> tuple[str, bool]:
     return resolved, False
 
 
-def resolve_model(env_var: str, model_contains_slash: bool = False) -> tuple[str, str]:
-    """`<model>[/<effort>]` 形式の環境変数を (model, effort) に分解する。
+def split_model_spec(raw: str, model_contains_slash: bool = False) -> tuple[str, str]:
+    """`<model>[/<effort>]` 形式の文字列を (model, effort) に分解する。
 
-    未設定または空文字列の場合は ("", "") を返す。呼び出し側はその場合に
-    CLI 既定または agent 固有の既定モデルを使う。値の妥当性は検証せず、
-    そのまま CLI に渡してエラー報告を CLI 側に委ねる。
+    空文字列の場合は ("", "") を返す。
 
     model_contains_slash=True の CLI（opencode の `provider/model` 形式）では
     モデル名自体に `/` を含むため、区切りが 3 要素以上の場合のみ末尾を effort と
     みなす（`anthropic/claude-sonnet-4/high` → model=anthropic/claude-sonnet-4, effort=high）。
     """
-    raw = os.environ.get(env_var, "").strip()
+    raw = raw.strip()
     if not raw:
         return "", ""
     parts = raw.split("/")
@@ -50,16 +48,53 @@ def resolve_model(env_var: str, model_contains_slash: bool = False) -> tuple[str
         return "/".join(parts[:-1]), parts[-1]
     return raw, ""
 
-def parse_args(argv: list[str]) -> tuple[str, str, dict[str, bool]]:
-    """--message / --session-id / --inject-fixed-prompt / stdin から (message, session_id, flags) を取り出す。
+
+def resolve_model(
+    env_var: str,
+    model_contains_slash: bool = False,
+    overrides: dict[str, str] | None = None,
+) -> tuple[str, str]:
+    """使用する (model, effort) を決定する。
+
+    優先順位は「呼び出し時の明示指定 (overrides) > 環境変数 > 未指定」。
+    model と effort は独立に上書きされるため、`--model` だけを指定した場合の
+    effort は環境変数由来の値（無ければ未指定）のままになる。
+
+    どちらも決まらない場合は ("", "") を返す。呼び出し側はその場合に
+    CLI 既定または agent 固有の既定モデルを使う。値の妥当性は検証せず、
+    そのまま CLI に渡してエラー報告を CLI 側に委ねる。
+    """
+    overrides = overrides or {}
+    model = str(overrides.get("model", "")).strip()
+    effort = str(overrides.get("effort", "")).strip()
+    if model and effort:
+        return model, effort
+    env_model, env_effort = split_model_spec(
+        os.environ.get(env_var, ""), model_contains_slash
+    )
+    return model or env_model, effort or env_effort
+
+
+def parse_args(argv: list[str]) -> tuple[str, str, dict[str, bool], dict[str, str]]:
+    """コマンドライン引数と stdin から (message, session_id, flags, overrides) を取り出す。
+
+    受け付けるオプション:
+    - --message / stdin: 送信するメッセージ
+    - --session-id: 継続対象のセッション ID
+    - --inject-fixed-prompt: 固定プロンプトの挿入を要求するフラグ
+    - --model / --effort: 使用するモデルと reasoning effort の明示指定
 
     flags は agent 別の振る舞いを切り替えるブーリアン辞書。現状のキー:
     - inject_fixed_prompt: agent が定義する固定プロンプト（役割・出力ルール・観点等、agent によって内容は異なる）の
       挿入を明示的に要求するフラグ
+
+    overrides は既定値（環境変数）より優先されるモデル指定。未指定のキーは
+    空文字列で、その場合は既定値が使われる。
     """
     message = ""
     session_id = ""
     flags: dict[str, bool] = {"inject_fixed_prompt": False}
+    overrides: dict[str, str] = {"model": "", "effort": ""}
     i = 0
     while i < len(argv):
         arg = argv[i]
@@ -72,6 +107,12 @@ def parse_args(argv: list[str]) -> tuple[str, str, dict[str, bool]]:
         elif arg == "--inject-fixed-prompt":
             flags["inject_fixed_prompt"] = True
             i += 1
+        elif arg == "--model" and i + 1 < len(argv):
+            overrides["model"] = argv[i + 1]
+            i += 2
+        elif arg == "--effort" and i + 1 < len(argv):
+            overrides["effort"] = argv[i + 1]
+            i += 2
         else:
             print(f"ERROR: 不明なオプション: {arg}", file=sys.stderr)
             sys.exit(1)
@@ -80,7 +121,7 @@ def parse_args(argv: list[str]) -> tuple[str, str, dict[str, bool]]:
     if not message:
         print("ERROR: --message または stdin でメッセージを指定してください", file=sys.stderr)
         sys.exit(1)
-    return message, session_id, flags
+    return message, session_id, flags, overrides
 
 
 def make_temp(prefix: str) -> Path:

@@ -1,6 +1,6 @@
 # claude-ask
 
-別セッションの Claude Opus に質問を送り、回答を Markdown ログファイルに保存する。`session_id` を使って複数ターンの会話を継続できる。
+別セッションの Claude に質問を送り、回答を Markdown ログファイルに保存する。`session_id` を使って複数ターンの会話を継続できる。
 
 ## 基本情報
 
@@ -18,15 +18,17 @@
 ## 呼び出し形式
 
 ```
-[session_id=<SESSION_ID>] message_to_send=<メッセージ>
+[session_id=<SESSION_ID>] [model=<MODEL>] [effort=<EFFORT>] message_to_send=<メッセージ>
 ```
 
 ### 引数
 
 | 引数 | 必須 | 説明 |
 |---|---|---|
-| `message_to_send=<メッセージ>` | 必須 | Opus に送るメッセージ。原文のまま渡す |
+| `message_to_send=<メッセージ>` | 必須 | 別セッションの Claude に送るメッセージ。原文のまま渡す |
 | `session_id=<SESSION_ID>` | 省略可 | 指定すると以前の会話を継続する |
+| `model=<MODEL>` | 省略可 | 使用するモデル。**ユーザーが明示的に指定した場合のみ渡す** |
+| `effort=<EFFORT>` | 省略可 | reasoning effort。**ユーザーが明示的に指定した場合のみ渡す** |
 
 ## 親セッションへの応答
 
@@ -36,9 +38,9 @@
 
 ログファイルの中身は親セッションに展開しない。必要な部分は呼び出し側が `Read` ツールで取り込む。
 
-## Opus セッションで使えるツール
+## 別セッションで使えるツール
 
-Opus セッションには以下のツールのみ許可される。
+別セッションには以下のツールのみ許可される。
 
 | ツール | 用途 |
 |---|---|
@@ -62,14 +64,14 @@ Opus セッションには以下のツールのみ許可される。
 |---|---|
 | ヘッダー | 日時・モード（new / continuation）・ディレクトリ・セッション ID |
 | メッセージ | 送信したメッセージ原文 |
-| Claude の回答 | Opus モデルからの回答 |
+| Claude の回答 | 別セッションの Claude からの回答 |
 | エラー情報 | エラー時のみ。exit code と stderr の内容 |
 
 ログファイル名のパターン：`<YYYYMMDD_HHMMSS_mmm>_<プロジェクト名>_claude-ask.md`
 
 ### session_id による会話継続
 
-ログの `セッションID` 欄に記録されている ID を次回呼び出しの `session_id` に渡すと、同じ Opus セッションで会話を続けられる。
+ログの `セッションID` 欄に記録されている ID を次回呼び出しの `session_id` に渡すと、同じセッションで会話を続けられる。
 `session_id` は claude-review でも使用可能。
 
 ## Claude CLI 実行引数
@@ -80,8 +82,8 @@ Opus セッションには以下のツールのみ許可される。
 |---|---|---|
 | `-p` | — | 非インタラクティブモード（print mode） |
 | `--output-format` | `json` | JSON 形式で出力 |
-| `--model` | `Opus` | 使用するモデル。`CLAUDE_ASK_DEFAULT_MODEL` で変更できる |
-| `--effort` | — | `CLAUDE_ASK_DEFAULT_MODEL` で effort を指定した場合のみ付与 |
+| `--model` | — | モデルを指定した場合のみ付与 |
+| `--effort` | — | effort を指定した場合のみ付与 |
 | `--dangerously-skip-permissions` | — | 権限確認をスキップ |
 | `--tools` | `Read,Glob,Grep,Bash,WebSearch,WebFetch` | 許可するツール |
 
@@ -89,15 +91,27 @@ Opus セッションには以下のツールのみ許可される。
 
 ## モデルの指定
 
-環境変数 `CLAUDE_ASK_DEFAULT_MODEL` で使用するモデルを指定できる。
+使用するモデルと reasoning effort は、呼び出し時の `model=` / `effort=` 指定と環境変数 `CLAUDE_ASK_DEFAULT_MODEL` の 2 通りで指定できる。
+
+| 優先順 | 指定方法 |
+|---|---|
+| 1 | 呼び出しプロンプトの `model=` / `effort=`（agent が `--model` / `--effort` として渡す） |
+| 2 | 環境変数 `CLAUDE_ASK_DEFAULT_MODEL` |
+| 3 | 未指定（既定モデル） |
+
+`model` と `effort` は独立に上書きされる。`model` だけを明示指定した場合、effort は環境変数由来の値（無ければ未指定）のままになる。
+
+agent は**ユーザーが明示的にモデルや effort を指定した場合のみ** `--model` / `--effort` を付与する。指定が無い場合は付与せず、環境変数または `claude` CLI の既定モデルが使われる。
+
+環境変数 `CLAUDE_ASK_DEFAULT_MODEL` の書式は次のとおり。
 
 | 書式 | 例 | 動作 |
 |---|---|---|
 | `<model>` | `opus` | モデルのみ指定する |
 | `<model>/<effort>` | `opus/high` | モデルと reasoning effort を指定する |
-| 未設定 / 空文字列 | — | 既定の `Opus` を使用する |
+| 未設定 / 空文字列 | — | `claude` CLI 既定のモデルを使用する |
 
-指定した値は `claude` の `--model`（model）と `--effort`（effort）にそのまま渡される。プラグイン側で値の妥当性は検証しないため、不正な値を指定した場合は claude 側がエラーを返し、その内容がログの「エラー情報」に記録される。
+呼び出し時の指定・環境変数のいずれで指定した値も、`claude` の `--model`（model）と `--effort`（effort）にそのまま渡される。プラグイン側で値の妥当性は検証しないため、不正な値を指定した場合は claude 側がエラーを返し、その内容がログの「エラー情報」に記録される。
 
 ## エラー処理
 
@@ -106,7 +120,7 @@ Opus セッションには以下のツールのみ許可される。
 | `message_to_send` が不足 | 引数不正メッセージを出力して終了 |
 | `claude` 未インストール | `'claude' コマンドが見つかりません` を出力して終了 |
 | Python 3.10+ が見つからない | `python-wrapper.sh` が固定メッセージで終了 |
-| Opus の実行エラー | エラー内容をログに含めてパスを返す（exit code 1） |
+| `claude` の実行エラー | エラー内容をログに含めてパスを返す（exit code 1） |
 
 ## 依存
 

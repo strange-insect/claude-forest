@@ -1,7 +1,7 @@
 ---
 name: claude-pairing
 description: |-
-  現在の Claude セッションと Opus セッションを 1:1 でペアリングする。
+  現在の Claude セッションと別セッションの Claude を 1:1 でペアリングする。
   ペアリング後はペアリングされた セッション ID 以外での claude-ask / claude-review が禁止される。
   ユーザーが claude-pairing の使用を明示的に指定した場合に使用。
 
@@ -12,7 +12,7 @@ model: sonnet
 
 ## エージェントの役割
 
-claude-ask パイプラインで Opus に挨拶を送り、発行されたセッション ID を
+claude-ask パイプラインで別セッションの Claude に挨拶を送り、発行されたセッション ID を
 `CLAUDE_PLUGIN_DATA/claude-pairing.txt` に記録する。
 
 ## 手順
@@ -50,14 +50,14 @@ PAIRING_FILE="${CLAUDE_PLUGIN_DATA}/claude-pairing.txt"
 PAIRING_FILE_TMP="${PAIRING_FILE}.tmp"
 if [ -f "${PAIRING_FILE}" ]; then cp "${PAIRING_FILE}" "${PAIRING_FILE_TMP}"; else touch "${PAIRING_FILE_TMP}"; fi
 
-OPUS_SID="$(grep '^\- \*\*セッションID\*\*:' "<LOG_PATH>" | sed 's/.*: //')"
-if [ -z "${OPUS_SID}" ] || [ "${OPUS_SID}" = "unresolved" ]; then echo "PAIRING_FAILED"; exit 1; fi
+PAIRED_SID="$(grep '^\- \*\*セッションID\*\*:' "<LOG_PATH>" | sed 's/.*: //')"
+if [ -z "${PAIRED_SID}" ] || [ "${PAIRED_SID}" = "unresolved" ]; then echo "PAIRING_FAILED"; exit 1; fi
 sed -i -e "/CLAUDE: ${CLAUDE_SESSION_ID}/d" "${PAIRING_FILE_TMP}"
-echo "CLAUDE: ${CLAUDE_SESSION_ID}, OPUS: ${OPUS_SID}" >> "${PAIRING_FILE_TMP}"
+echo "CLAUDE: ${CLAUDE_SESSION_ID}, PAIRED: ${PAIRED_SID}" >> "${PAIRING_FILE_TMP}"
 mv "${PAIRING_FILE_TMP}" "${PAIRING_FILE}"
 
-grep -q "^CLAUDE: ${CLAUDE_SESSION_ID}, OPUS: ${OPUS_SID}$" "${PAIRING_FILE}" \
-  && echo "OPUS_SESSION_ID = $OPUS_SID" || echo "PAIRING_FAILED"
+grep -q "^CLAUDE: ${CLAUDE_SESSION_ID}, PAIRED: ${PAIRED_SID}$" "${PAIRING_FILE}" \
+  && echo "PAIRED_SESSION_ID = $PAIRED_SID" || echo "PAIRING_FAILED"
 ```
 
 ### 3. 応答
@@ -69,7 +69,7 @@ grep -q "^CLAUDE: ${CLAUDE_SESSION_ID}, OPUS: ${OPUS_SID}$" "${PAIRING_FILE}" \
 ```
 ペアリングを実施しました。
 以下の Session ID 以外での claude-ask, claude-review は禁止されます。
-Opus Session ID: <手順 2 の OPUS_SESSION_ID の値>
+ペアリング先 Session ID: <手順 2 の PAIRED_SESSION_ID の値>
 ```
 
 #### 確認結果が "PAIRING_FAILED" の場合

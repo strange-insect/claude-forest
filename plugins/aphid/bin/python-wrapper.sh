@@ -37,14 +37,12 @@ set -euo pipefail
 
 # Plugin が使う Python target version
 _PW_PYTHON_TARGET_VERSION="3.12"
-# Plugin 固有の conda 環境名
-_PW_CONDA_ENV_NAME="aphid-plugin"
-# export する環境変数名（プロセス境界を越えるキャッシュキー）
-_PW_PYTHON_VAR="APHID_PYTHON"
-_PW_CONDA_ENV_VAR="APHID_CONDA_ENV"
 
 # CLAUDE_PLUGIN_ROOTが未設定ならエラー。
 : "${CLAUDE_PLUGIN_ROOT:?CLAUDE_PLUGIN_ROOT is required}"
+
+# Plugin 固有の値 (conda 環境名 / キャッシュ用の環境変数名)
+. "${CLAUDE_PLUGIN_ROOT}/bin/plugin.env"
 
 # §2.7 固定メッセージ（plugin ごとに考えさせず指定文言に固定する）
 _pw_print_no_runtime() {

@@ -2,8 +2,8 @@
 """ask-pipeline: ask 系の処理パイプラインを実行し、Markdown ログファイルパスを返す。
 
 呼び出し (python-wrapper.sh 経由、CLAUDE_PLUGIN_ROOT / CLAUDE_PLUGIN_DATA が必要):
-    python-wrapper.sh ask-pipeline.py --agent <name> [--lock-prefix PREFIX] [--session-id ID] [--output-dir PATH] --message "msg"
-    python-wrapper.sh ask-pipeline.py --agent <name> [--lock-prefix PREFIX] [--session-id ID] [--output-dir PATH] <<EOF
+    python-wrapper.sh ask-pipeline.py --agent <name> [--lock-prefix PREFIX] [--session-id SESSION_ID] [--output-dir PATH] [--model MODEL] [--effort EFFORT] --message "msg"
+    python-wrapper.sh ask-pipeline.py --agent <name> [--lock-prefix PREFIX] [--session-id SESSION_ID] [--output-dir PATH] [--model MODEL] [--effort EFFORT] <<EOF
     質問テキスト（複数行可）
     EOF
 
@@ -198,6 +198,8 @@ def main() -> int:
     output_dir = ""
     message = ""
     inject_fixed_prompt = False
+    model_override = ""
+    effort_override = ""
 
     argv = sys.argv[1:]
     i = 0
@@ -221,6 +223,12 @@ def main() -> int:
         elif arg == "--inject-fixed-prompt":
             inject_fixed_prompt = True
             i += 1
+        elif arg == "--model" and i + 1 < len(argv):
+            model_override = argv[i + 1]
+            i += 2
+        elif arg == "--effort" and i + 1 < len(argv):
+            effort_override = argv[i + 1]
+            i += 2
         else:
             die(f"不明なオプション: {arg}")
 
@@ -282,8 +290,8 @@ def main() -> int:
     # agent 実行後に同じファイル名で上書きされるため、フォーマットが完全に一致する。
     save_script = plugin_root_path / "bin" / "save-ask-log.py"
     file_stem = _make_file_stem(agent)
-    model = agent.partition("-")[0]
-    json_dir = Path(tempfile.gettempdir()) / f"{model}-ask"
+    log_prefix = agent.partition("-")[0]
+    json_dir = Path(tempfile.gettempdir()) / f"{log_prefix}-ask"
     json_path = json_dir / f"{file_stem}.json"
 
     mode = "continuation" if session_id else "new"
@@ -318,6 +326,11 @@ def main() -> int:
         run_args += ["--session-id", session_id]
     if inject_fixed_prompt:
         run_args += ["--inject-fixed-prompt"]
+    # 未指定時は渡さない（agent 側で既定値が使われる）
+    if model_override:
+        run_args += ["--model", model_override]
+    if effort_override:
+        run_args += ["--effort", effort_override]
 
     agent_stdout, exit_code = run_step(run_script, run_args)
     if exit_code != 0:

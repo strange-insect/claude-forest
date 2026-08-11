@@ -35,6 +35,8 @@ claude plugin install aphid@claude-forest
 | `CODEX_REVIEW_DEFAULT_MODEL` | `codex-review` | 同上 |
 | `CODEX_TASK_DEFAULT_MODEL` | `codex-task` | 同上 |
 
+※ 各 agent の呼び出し時に `model=` / `effort=` を指定した場合はそちらが優先される（ユーザーが明示的に指定した場合のみ使用される）
+
 ## agent 一覧
 
 | agent 名 | 説明 |

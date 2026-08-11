@@ -2,8 +2,8 @@
 """codex-ask: OpenAI Codex CLI で 1問1答形式の Q&A を実行し、結果を JSON で返す。
 
 呼び出し:
-    codex-ask.py [--session-id UUID] --message "質問テキスト"
-    codex-ask.py [--session-id UUID]  # stdin からメッセージを読む
+    codex-ask.py [--session-id UUID] [--model MODEL] [--effort EFFORT] --message "質問テキスト"
+    codex-ask.py [--session-id UUID] [--model MODEL] [--effort EFFORT]  # stdin からメッセージを読む
 
 stdout には結果 JSON を返す（ask-pipeline.py が受け取る）。
 """
@@ -56,10 +56,10 @@ def main() -> int:
         )
         return 1
 
-    message, session_id, _flags = common.parse_args(sys.argv[1:])
+    message, session_id, _flags, overrides = common.parse_args(sys.argv[1:])
     prompt = build_prompt(message, session_id)
 
-    model, effort = common.resolve_model("CODEX_ASK_DEFAULT_MODEL")
+    model, effort = common.resolve_model("CODEX_ASK_DEFAULT_MODEL", overrides=overrides)
 
     tmp_jsonl = common.make_temp("codex-ask-jsonl-")
     tmp_msg = common.make_temp("codex-ask-msg-")

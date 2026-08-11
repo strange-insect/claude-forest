@@ -19,6 +19,8 @@ agent から呼ばれ、AI 実行・ログ生成・ファイル配置の一連�
 | `--lock-prefix <text>` | 省略可 | 排他ロックキーのプレフィックス。省略時は `--agent` の値を使用 |
 | `--output-dir <PATH>` | 省略可 | ログの配置先ディレクトリ |
 | `--inject-fixed-prompt` | 省略可 | agent 固有の固定プロンプト（役割定義・観点など、内容は agent 実装次第）を message の先頭へ明示的に付加する。`build_prompt(message, session_id, inject_fixed_prompt=...)` に伝搬される。引数を受け取らない agent ではフラグは無視される |
+| `--model <MODEL>` | 省略可 | 使用するモデル。agent スクリプトへそのまま伝搬される。未指定時は agent 側の既定値（環境変数または CLI 既定）が使われる |
+| `--effort <EFFORT>` | 省略可 | reasoning effort。同上 |
 
 ## パイプライン
 
@@ -32,7 +34,7 @@ agent 実行前に、ファイル名（`<timestamp>_<project>_<agent>`）を確�
 
 ### Step 1: agent 実行
 
-`agents/<agent>.py` を `--message`、`--session-id`（指定時）、`--inject-fixed-prompt`（指定時）を渡して実行する。
+`agents/<agent>.py` を `--message`、`--session-id`（指定時）、`--inject-fixed-prompt`（指定時）、`--model` / `--effort`（指定時）を渡して実行する。`--model` / `--effort` は未指定なら渡さないため、agent 側は既定値を使う。
 agent は Codex CLI 実行を担い、結果（session_id・answer・status・exit_code・error_detail）を JSON 形式で stdout に返す。
 ask-pipeline がその JSON を受け取り、Step 0 と同じパスに最終 JSON を書き込む。
 

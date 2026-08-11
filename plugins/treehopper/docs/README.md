@@ -35,6 +35,8 @@ claude plugin install treehopper@claude-forest
 | `OPENCODE_REVIEW_DEFAULT_MODEL` | `opencode-review` | 同上 |
 | `OPENCODE_TASK_DEFAULT_MODEL` | `opencode-task` | 同上 |
 
+※ 各 agent の呼び出し時に `model=` / `effort=` を指定した場合はそちらが優先される（ユーザーが明示的に指定した場合のみ使用される）
+
 ## agent 一覧
 
 | agent 名 | 説明 |

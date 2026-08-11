@@ -2,8 +2,8 @@
 """opencode-review: opencode CLI でコードレビューを実行し、結果を JSON で返す。
 
 呼び出し:
-    opencode-review.py [--session-id ID] [--inject-fixed-prompt] --message "レビュー指示"
-    opencode-review.py [--session-id ID] [--inject-fixed-prompt]  # stdin からメッセージを読む
+    opencode-review.py [--session-id ID] [--inject-fixed-prompt] [--model MODEL] [--effort EFFORT] --message "レビュー指示"
+    opencode-review.py [--session-id ID] [--inject-fixed-prompt] [--model MODEL] [--effort EFFORT]  # stdin からメッセージを読む
 
 新規セッション時は必ず固定プロンプト（役割・出力ルール・標準観点）を先頭に付加する。
 継続セッション時は通常付加しないが、`--inject-fixed-prompt` 指定時のみ付加する。
@@ -69,10 +69,12 @@ def main() -> int:
         )
         return 1
 
-    message, session_id, flags = common.parse_args(sys.argv[1:])
+    message, session_id, flags, overrides = common.parse_args(sys.argv[1:])
     prompt = build_prompt(message, session_id, inject_fixed_prompt=flags.get("inject_fixed_prompt", False))
 
-    model, effort = common.resolve_model("OPENCODE_REVIEW_DEFAULT_MODEL", model_contains_slash=True)
+    model, effort = common.resolve_model(
+        "OPENCODE_REVIEW_DEFAULT_MODEL", model_contains_slash=True, overrides=overrides
+    )
 
     tmp_jsonl = common.make_temp("opencode-review-jsonl-")
     tmp_stderr = common.make_temp("opencode-review-err-")

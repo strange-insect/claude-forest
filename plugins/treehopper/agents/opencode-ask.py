@@ -2,8 +2,8 @@
 """opencode-ask: opencode CLI で 1問1答形式の Q&A を実行し、結果を JSON で返す。
 
 呼び出し:
-    opencode-ask.py [--session-id ID] --message "質問テキスト"
-    opencode-ask.py [--session-id ID]  # stdin からメッセージを読む
+    opencode-ask.py [--session-id ID] [--model MODEL] [--effort EFFORT] --message "質問テキスト"
+    opencode-ask.py [--session-id ID] [--model MODEL] [--effort EFFORT]  # stdin からメッセージを読む
 
 stdout には結果 JSON を返す（ask-pipeline.py が受け取る）。
 """
@@ -81,10 +81,12 @@ def main() -> int:
         )
         return 1
 
-    message, session_id, _flags = common.parse_args(sys.argv[1:])
+    message, session_id, _flags, overrides = common.parse_args(sys.argv[1:])
     prompt = build_prompt(message, session_id)
 
-    model, effort = common.resolve_model("OPENCODE_ASK_DEFAULT_MODEL", model_contains_slash=True)
+    model, effort = common.resolve_model(
+        "OPENCODE_ASK_DEFAULT_MODEL", model_contains_slash=True, overrides=overrides
+    )
 
     tmp_jsonl = common.make_temp("opencode-ask-jsonl-")
     tmp_stderr = common.make_temp("opencode-ask-err-")
