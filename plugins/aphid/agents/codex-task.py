@@ -2,8 +2,8 @@
 """codex-task: OpenAI Codex CLI でファイル書き込みを含む作業を実行し、結果を JSON で返す。
 
 呼び出し:
-    codex-task.py [--session-id ID] [--inject-fixed-prompt] --message "作業指示"
-    codex-task.py [--session-id ID] [--inject-fixed-prompt]  # stdin からメッセージを読む
+    codex-task.py [--session-id ID] [--inject-fixed-prompt] [--model MODEL] [--effort EFFORT] --message "作業指示"
+    codex-task.py [--session-id ID] [--inject-fixed-prompt] [--model MODEL] [--effort EFFORT]  # stdin からメッセージを読む
 
 stdout には結果 JSON を返す（ask-pipeline.py が受け取る）。
 
@@ -94,10 +94,10 @@ def main() -> int:
         )
         return 1
 
-    message, session_id, flags = common.parse_args(sys.argv[1:])
+    message, session_id, flags, overrides = common.parse_args(sys.argv[1:])
     prompt = build_prompt(message, session_id, inject_fixed_prompt=flags.get("inject_fixed_prompt", False))
 
-    model, effort = common.resolve_model("CODEX_TASK_DEFAULT_MODEL")
+    model, effort = common.resolve_model("CODEX_TASK_DEFAULT_MODEL", overrides=overrides)
 
     tmp_jsonl = common.make_temp("codex-task-jsonl-")
     tmp_msg = common.make_temp("codex-task-msg-")

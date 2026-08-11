@@ -21,7 +21,7 @@ OpenAI Codex CLI に質問を送り、回答を Markdown ログファイルに�
 ## 呼び出し形式
 
 ```
-[session_id=<SESSION_ID>] message_to_send=<メッセージ>
+[session_id=<SESSION_ID>] [model=<MODEL>] [effort=<EFFORT>] message_to_send=<メッセージ>
 ```
 
 ### 引数
@@ -30,6 +30,8 @@ OpenAI Codex CLI に質問を送り、回答を Markdown ログファイルに�
 |---|---|---|
 | `message_to_send=<メッセージ>` | 必須 | Codex に送るメッセージ。原文のまま渡す |
 | `session_id=<SESSION_ID>` | 省略可 | 指定すると以前の会話を継続する |
+| `model=<MODEL>` | 省略可 | 使用するモデル。**ユーザーが明示的に指定した場合のみ渡す** |
+| `effort=<EFFORT>` | 省略可 | reasoning effort。**ユーザーが明示的に指定した場合のみ渡す** |
 
 ## 親セッションへの応答
 
@@ -79,15 +81,27 @@ Codex CLI は以下の固定引数で起動される。
 
 ## モデルの指定
 
-環境変数 `CODEX_ASK_DEFAULT_MODEL` で使用するモデルを指定できる。
+使用するモデルと reasoning effort は、呼び出し時の `model=` / `effort=` 指定と環境変数 `CODEX_ASK_DEFAULT_MODEL` の 2 通りで指定できる。
+
+| 優先順 | 指定方法 |
+|---|---|
+| 1 | 呼び出しプロンプトの `model=` / `effort=`（agent が `--model` / `--effort` として渡す） |
+| 2 | 環境変数 `CODEX_ASK_DEFAULT_MODEL` |
+| 3 | 未指定（既定モデル） |
+
+`model` と `effort` は独立に上書きされる。`model` だけを明示指定した場合、effort は環境変数由来の値（無ければ未指定）のままになる。
+
+agent は**ユーザーが明示的にモデルや effort を指定した場合のみ** `--model` / `--effort` を付与する。指定が無い場合は付与せず、環境変数または既定モデルが使われる（従来と同じ挙動）。
+
+環境変数 `CODEX_ASK_DEFAULT_MODEL` の書式は次のとおり。
 
 | 書式 | 例 | 動作 |
 |---|---|---|
 | `<model>` | `gpt-5` | モデルのみ指定する |
-| `<model>/<effort>` | `gpt-5/high` | モデルと reasoning effort を指定する |
+| `<model>,<effort>` | `gpt-5,high` | モデルと reasoning effort を指定する |
 | 未設定 / 空文字列 | — | codex CLI 既定のモデルを使用する |
 
-指定した値は `codex` の `-m`（model）と `-c model_reasoning_effort=`（effort）にそのまま渡される。プラグイン側で値の妥当性は検証しないため、不正な値を指定した場合は codex 側がエラーを返し、その内容がログの「エラー情報」に記録される。
+呼び出し時の指定・環境変数のいずれで指定した値も、`codex` の `-m`（model）と `-c model_reasoning_effort=`（effort）にそのまま渡される。プラグイン側で値の妥当性は検証しないため、不正な値を指定した場合は codex 側がエラーを返し、その内容がログの「エラー情報」に記録される。
 
 ## エラー処理
 

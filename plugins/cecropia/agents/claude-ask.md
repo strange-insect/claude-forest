@@ -1,17 +1,25 @@
 ---
 name: claude-ask
 description: |-
-  1問1答形式で別セッションの Opus と会話する。
+  1問1答形式で別セッションの Claude と会話する。
   session_id を使った会話継続に対応するため、複数ターンの会話/議論や追加指示も可能。
   ユーザーが claude-ask の使用を明示的に指定した場合に使用。
 
-  呼び出しプロンプト形式: "[session_id=<text>] message_to_send=<メッセージ>"
+  呼び出しプロンプト形式: "[session_id=<text>] [model=<text>] [effort=<text>] message_to_send=<メッセージ>"
 
   session_id [OPTIONAL]:
   - 以前の会話から継続する場合は session_id を指定する
 
+  model [OPTIONAL]:
+  - 使用するモデル
+  - **ユーザーが明示的に指示した場合以外は指定しない**
+
+  effort [OPTIONAL]:
+  - reasoning effort
+  - **ユーザーが明示的に指示した場合以外は指定しない**
+
   message_to_send [REQUIRED]:
-  - Opusに送信するメッセージ
+  - 別セッションの Claude に送信するメッセージ
 tools: Bash
 model: sonnet
 ---
@@ -23,7 +31,7 @@ model: sonnet
 ## 標準的な呼び出し prompt 形式:
 
 ```
-"[session_id=<text>] message_to_send=<メッセージ>"
+"[session_id=<text>] [model=<text>] [effort=<text>] message_to_send=<メッセージ>"
 ```
 
 ## 手順
@@ -38,6 +46,7 @@ model: sonnet
 
 注意:
 - 入力プロンプトで session_id が指定された場合に限り `--session-id` オプションを付与する
+- 入力プロンプトで model / effort が指定された場合に限り `--model` / `--effort` オプションを付与する。ユーザーが明示的に指定していない場合は付与しないこと（既定値が使われる）
 - `CLAUDE_PLUGIN_ROOT` と `CLAUDE_PLUGIN_DATA` は additionalContext で提供された値を使用し、コマンド実行時に環境変数として export する
 - エージェントはログファイルを開いて内容を読まないこと。
 
@@ -48,6 +57,8 @@ export CLAUDE_PLUGIN_DATA="${CLAUDE_PLUGIN_DATA}"
   --agent claude-ask \
   --lock-prefix claude \
   [--session-id "<SESSION_ID>"] \
+  [--model "<MODEL>"] \
+  [--effort "<EFFORT>"] \
   <<'EOF'
 <メッセージ>
 EOF

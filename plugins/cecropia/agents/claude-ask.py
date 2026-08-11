@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""claude-ask: claude -p + Opus モデルで 1問1答形式の Q&A を実行し、結果を JSON で返す。
+"""claude-ask: claude -p で 1問1答形式の Q&A を実行し、結果を JSON で返す。
 
 呼び出し:
-    claude-ask.py [--session-id UUID] --message "質問テキスト"
-    claude-ask.py [--session-id UUID]  # stdin からメッセージを読む
+    claude-ask.py [--session-id UUID] [--model MODEL] [--effort EFFORT] --message "質問テキスト"
+    claude-ask.py [--session-id UUID] [--model MODEL] [--effort EFFORT]  # stdin からメッセージを読む
 
 Tools: --tools で Write/Edit を無効化し Read/Glob/Grep/Bash/WebSearch/WebFetch のみを許可する。
 ただし Bash 経由で `cat > file` 等の書き込みは可能なので、信頼できないリポジトリでの利用には注意。
@@ -67,10 +67,10 @@ def main() -> int:
         )
         return 1
 
-    message, session_id, _flags = common.parse_args(sys.argv[1:])
+    message, session_id, _flags, overrides = common.parse_args(sys.argv[1:])
     prompt = build_prompt(message, session_id)
 
-    model, effort = common.resolve_model("CLAUDE_ASK_DEFAULT_MODEL")
+    model, effort = common.resolve_model("CLAUDE_ASK_DEFAULT_MODEL", overrides=overrides)
 
     tmp_output = common.make_temp("claude-ask-output-")
     tmp_stderr = common.make_temp("claude-ask-err-")
@@ -81,9 +81,9 @@ def main() -> int:
             "-p",
             "--output-format",
             "json",
-            "--model",
-            model or "Opus",
         ]
+        if model:
+            cmd += ["--model", model]
         if effort:
             cmd += ["--effort", effort]
         if session_id:

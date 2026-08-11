@@ -55,6 +55,6 @@ subagent 起動時に発火し、`CLAUDE_PLUGIN_ROOT` と `CLAUDE_PLUGIN_DATA` �
 
 `claude-pairing` agent によるペアリング実行後に有効になる。
 
-`claude-ask` / `claude-review` の Agent 呼び出し時に発火し、プロンプトにペアリング済みの Opus セッション ID が含まれているかを検証する。含まれていない場合は呼び出しをブロックし、正しい Session ID を通知する。
+`claude-ask` / `claude-review` の Agent 呼び出し時に発火し、プロンプトにペアリング済みの Claude セッション ID が含まれているかを検証する。含まれていない場合は呼び出しをブロックし、正しい Session ID を通知する。
 
 ペアリングファイル（`$CLAUDE_PLUGIN_DATA/claude-pairing.txt`）が存在しない、または現在の `CLAUDE_SESSION_ID` に対応するエントリがない場合はブロックしない。

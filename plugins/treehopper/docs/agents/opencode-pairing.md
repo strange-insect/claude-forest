@@ -1,6 +1,6 @@
 # opencode-pairing
 
-現在の Claude セッションと opencode セッションを 1:1 でペアリングする。ペアリング後は、このセッションからの `opencode-ask` / `opencode-review` / `opencode-task` 呼び出しに、ペアリング済みの opencode セッション ID が必須になる。
+現在の Claude セッションと opencode セッションを 1:1 でペアリングする。ペアリング後は、このセッションからの `opencode-ask` / `opencode-review` 呼び出しに、ペアリング済みの opencode セッション ID が必須になる。
 
 ## 基本情報
 
@@ -24,7 +24,7 @@
 
 1. `opencode-ask` パイプラインを使って opencode に挨拶を送り、新しい opencode セッションを開始する
 2. 発行された opencode セッション ID と現在の `CLAUDE_SESSION_ID` の対応を `$CLAUDE_PLUGIN_DATA/opencode-pairing.txt` に記録する
-3. 以降、`PreToolUse` フックが `opencode-ask` / `opencode-review` / `opencode-task` 呼び出し時にセッション ID を検証する
+3. 以降、`PreToolUse` フックが `opencode-ask` / `opencode-review` 呼び出し時にセッション ID を検証する
 
 ## ペアリングファイル
 
@@ -41,7 +41,7 @@
 
 ```
 ペアリングを実施しました。
-以下の Session ID 以外での opencode-ask, opencode-review, opencode-task は禁止されます。
+以下の Session ID 以外での opencode-ask, opencode-review は禁止されます。
 opencode Session ID: <OPENCODE_SESSION_ID>
 ```
 
@@ -53,7 +53,7 @@ opencode Session ID: <OPENCODE_SESSION_ID>
 
 ## ペアリング後の制約
 
-`PreToolUse` フック（`opencode-pairing.sh`）が有効になり、`opencode-ask` / `opencode-review` / `opencode-task` の呼び出しプロンプトにペアリング済みの opencode セッション ID が含まれていない場合はブロックされる。
+`PreToolUse` フック（`opencode-pairing.sh`）が有効になり、`opencode-ask` / `opencode-review` の呼び出しプロンプトにペアリング済みの opencode セッション ID が含まれていない場合はブロックされる。
 
 詳細は [hooks/overview.md](../hooks/overview.md) を参照。
 

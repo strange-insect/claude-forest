@@ -20,7 +20,7 @@ OpenAI Codex CLI にファイルの変更などを含む作業を依頼し、作
 ## 呼び出し形式
 
 ```
-[session_id=<SESSION_ID>] [reinject_guideline=<true|false>] instruction=<作業指示>
+[session_id=<SESSION_ID>] [reinject_guideline=<true|false>] [model=<MODEL>] [effort=<EFFORT>] instruction=<作業指示>
 ```
 
 ### 引数
@@ -29,6 +29,8 @@ OpenAI Codex CLI にファイルの変更などを含む作業を依頼し、作
 |---|---|---|
 | `instruction=<作業指示>` | 必須 | Codex に依頼する作業内容。原文のまま渡す |
 | `session_id=<SESSION_ID>` | 省略可 | 指定すると以前の作業を継続する |
+| `model=<MODEL>` | 省略可 | 使用するモデル。**ユーザーが明示的に指定した場合のみ渡す** |
+| `effort=<EFFORT>` | 省略可 | reasoning effort。**ユーザーが明示的に指定した場合のみ渡す** |
 | `reinject_guideline=<true\|false>` | 省略可 | 固定プロンプト（作業報告の形式指定）を先頭に付加するか。初回は値に関わらず付加される |
 
 ## 親セッションへの応答
@@ -105,23 +107,29 @@ codex のサンドボックスは OS レベルで強制されるため、`worksp
 
 `exec` は元々非対話で承認を求めないため、承認関連のオプションは指定していない。
 
-## ペアリング
-
-`codex-pairing` によるペアリング後は、`codex-ask` / `codex-review` と同様に、ペアリングされたセッション ID 以外での呼び出しが PreToolUse フックによってブロックされる。
-
-新しい Codex セッションで作業したい場合は、`codex-pairing` を再実行してペアリング先を切り替える。
-
 ## モデルの指定
 
-環境変数 `CODEX_TASK_DEFAULT_MODEL` で使用するモデルを指定できる。
+使用するモデルと reasoning effort は、呼び出し時の `model=` / `effort=` 指定と環境変数 `CODEX_TASK_DEFAULT_MODEL` の 2 通りで指定できる。
+
+| 優先順 | 指定方法 |
+|---|---|
+| 1 | 呼び出しプロンプトの `model=` / `effort=`（agent が `--model` / `--effort` として渡す） |
+| 2 | 環境変数 `CODEX_TASK_DEFAULT_MODEL` |
+| 3 | 未指定（既定モデル） |
+
+`model` と `effort` は独立に上書きされる。`model` だけを明示指定した場合、effort は環境変数由来の値（無ければ未指定）のままになる。
+
+agent は**ユーザーが明示的にモデルや effort を指定した場合のみ** `--model` / `--effort` を付与する。指定が無い場合は付与せず、環境変数または既定モデルが使われる（従来と同じ挙動）。
+
+環境変数 `CODEX_TASK_DEFAULT_MODEL` の書式は次のとおり。
 
 | 書式 | 例 | 動作 |
 |---|---|---|
 | `<model>` | `gpt-5` | モデルのみ指定する |
-| `<model>/<effort>` | `gpt-5/high` | モデルと reasoning effort を指定する |
+| `<model>,<effort>` | `gpt-5,high` | モデルと reasoning effort を指定する |
 | 未設定 / 空文字列 | — | codex CLI 既定のモデルを使用する |
 
-指定した値は `codex` の `-m`（model）と `-c model_reasoning_effort=`（effort）にそのまま渡される。プラグイン側で値の妥当性は検証しないため、不正な値を指定した場合は codex 側がエラーを返し、その内容がログの「エラー情報」に記録される。
+呼び出し時の指定・環境変数のいずれで指定した値も、`codex` の `-m`（model）と `-c model_reasoning_effort=`（effort）にそのまま渡される。プラグイン側で値の妥当性は検証しないため、不正な値を指定した場合は codex 側がエラーを返し、その内容がログの「エラー情報」に記録される。
 
 ## エラー処理
 

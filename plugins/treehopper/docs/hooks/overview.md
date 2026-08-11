@@ -8,7 +8,7 @@
 |---|---|---|
 | `SessionStart` | セッション開始時 | `CLAUDE_SESSION_ID` を環境変数として後続プロセスに継承させる |
 | `SubagentStart` | subagent 起動時 | `CLAUDE_PLUGIN_ROOT` / `CLAUDE_PLUGIN_DATA` を additionalContext 経由で subagent に伝える |
-| `PreToolUse` | Agent ツール呼び出し前 | ペアリング済みの場合、指定外のセッション ID での `opencode-ask` / `opencode-review` / `opencode-task` 呼び出しをブロックする |
+| `PreToolUse` | Agent ツール呼び出し前 | ペアリング済みの場合、指定外のセッション ID での `opencode-ask` / `opencode-review` 呼び出しをブロックする |
 
 ## SessionStart
 
@@ -25,6 +25,6 @@ subagent 起動時に発火し、`CLAUDE_PLUGIN_ROOT` と `CLAUDE_PLUGIN_DATA` �
 
 `opencode-pairing` agent によるペアリング実行後に有効になる。
 
-`opencode-ask` / `opencode-review` / `opencode-task` の Agent 呼び出し時に発火し、プロンプトにペアリング済みの opencode セッション ID が含まれているかを検証する。含まれていない場合は呼び出しをブロックし、正しい Session ID を通知する。
+`opencode-ask` / `opencode-review` の Agent 呼び出し時に発火し、プロンプトにペアリング済みの opencode セッション ID が含まれているかを検証する。含まれていない場合は呼び出しをブロックし、正しい Session ID を通知する。
 
 ペアリングファイル（`$CLAUDE_PLUGIN_DATA/opencode-pairing.txt`）が存在しない、または現在の `CLAUDE_SESSION_ID` に対応するエントリがない場合はブロックしない。

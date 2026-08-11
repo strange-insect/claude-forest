@@ -2,7 +2,7 @@
 
 opencode CLI との連携機能を提供する Claude Code プラグイン。
 
-opencode との 1問1答・コードレビュー・ファイル書き込みを含む作業・セッションペアリングを agent として提供する。
+opencode との 1問1答・コードレビュー・ファイル書き込みを含む作業・セッションペアリング・セッションエクスポートを agent として提供する。
 
 ## 動作環境
 
@@ -31,9 +31,11 @@ claude plugin install treehopper@claude-forest
 
 | 環境変数 | 対象 agent | 説明 |
 |---------|-----------|------|
-| `OPENCODE_ASK_DEFAULT_MODEL` | `opencode-ask` | 使用するモデル。`<provider/model>` または `<provider/model>/<effort>` 形式。未設定または空文字列の場合は既定モデルを使用する |
+| `OPENCODE_ASK_DEFAULT_MODEL` | `opencode-ask` | 使用するモデル。`<provider/model>` または `<provider/model>,<effort>` 形式（区切りはカンマ）。未設定または空文字列の場合は既定モデルを使用する |
 | `OPENCODE_REVIEW_DEFAULT_MODEL` | `opencode-review` | 同上 |
 | `OPENCODE_TASK_DEFAULT_MODEL` | `opencode-task` | 同上 |
+
+※ 各 agent の呼び出し時に `model=` / `effort=` を指定した場合はそちらが優先される（ユーザーが明示的に指定した場合のみ使用される）
 
 ## agent 一覧
 
@@ -43,3 +45,4 @@ claude plugin install treehopper@claude-forest
 | `opencode-review` | opencode CLI で opencode にコードレビューを依頼する |
 | `opencode-task` | opencode CLI で opencode にファイル書き込みを含む作業を依頼する |
 | `opencode-pairing` | 現在の Claude セッションを opencode セッションに 1:1 でペアリングする |
+| `opencode-export-session` | opencode のセッション会話全文を Markdown ファイルにエクスポートする |

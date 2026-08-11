@@ -30,14 +30,14 @@ CLAUDE_SESSION_ID="$(printf '%s' "$FLAT" \
   | sed 's/.*"\([^"]*\)"$/\1/')"
 [[ -z "$CLAUDE_SESSION_ID" ]] && exit 0
 
-# ペアリングファイルから期待する Opus Session ID を取得
-# 形式: CLAUDE: <id>, OPUS: <id>
-EXPECTED_OPUS_ID="$(grep "^CLAUDE: ${CLAUDE_SESSION_ID}," "$PAIRING_FILE" | sed 's/.*OPUS: //')"
-[[ -z "$EXPECTED_OPUS_ID" ]] && exit 0
+# ペアリングファイルから期待するペアリング先 Session ID を取得
+# 形式: CLAUDE: <id>, PAIRED: <id>
+EXPECTED_PAIRED_ID="$(grep "^CLAUDE: ${CLAUDE_SESSION_ID}," "$PAIRING_FILE" | sed 's/.*PAIRED: //')"
+[[ -z "$EXPECTED_PAIRED_ID" ]] && exit 0
 
-# プロンプトに Opus Session ID が含まれているか確認
-printf '%s' "$FLAT" | grep -qF "$EXPECTED_OPUS_ID" && exit 0
+# プロンプトにペアリング先 Session ID が含まれているか確認
+printf '%s' "$FLAT" | grep -qF "$EXPECTED_PAIRED_ID" && exit 0
 
-printf '{"decision":"block","reason":"Session ID %s を指定してください（このセッションにペアリングされた Opus セッション ID です）"}' \
-  "$EXPECTED_OPUS_ID"
+printf '{"decision":"block","reason":"Session ID %s を指定してください（このセッションにペアリングされた Claude セッション ID です）"}' \
+  "$EXPECTED_PAIRED_ID"
 exit 2

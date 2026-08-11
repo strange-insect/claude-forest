@@ -1,11 +1,11 @@
 ---
 name: claude-review
 description: |-
-  Opusモデルでコードレビューを実施する。
+  別セッションの Claude でコードレビューを実施する。
   ユーザーが claude-review の使用を明示的に指定した場合に使用。
   agent 名を指定せず単に「レビューして」と言った場合は使用しない。
 
-  呼び出しプロンプト形式: "[session_id=<text>] [reinject_guideline=<true|false>] review_instruction=<レビュー指示>"
+  呼び出しプロンプト形式: "[session_id=<text>] [reinject_guideline=<true|false>] [model=<text>] [effort=<text>] review_instruction=<レビュー指示>"
 
   session_id [OPTIONAL]:
   - レビュー指摘対応の場合は初回レビュー時に発行された session_id を指定する
@@ -14,7 +14,15 @@ description: |-
   - 役割定義・出力ルール・標準レビュー観点などの固定プロンプトを review_instruction の先頭に付加するかどうか
   - 初回レビュー（session_id 未指定時）は値に関わらず必ず付加される
   - 継続レビュー（session_id 指定時）は true を指定した場合のみ付加される
-  - `claude-ask` からの継続セッションで初回プロンプトを Opus に与えていない場合に指定する
+  - `claude-ask` からの継続セッションで初回プロンプトを与えていない場合に指定する
+
+  model [OPTIONAL]:
+  - 使用するモデル
+  - **ユーザーが明示的に指示した場合以外は指定しない**
+
+  effort [OPTIONAL]:
+  - reasoning effort
+  - **ユーザーが明示的に指示した場合以外は指定しない**
 
   review_instruction [REQUIRED]:
   - 最もシンプルな指定は「未コミットの変更をレビューしてください」
@@ -37,7 +45,7 @@ model: sonnet
 ## 標準的な呼び出し prompt 形式:
 
 ```
-[session_id=<UUID>] [reinject_guideline=<true|false>] review_instruction=<レビュー指示>
+[session_id=<UUID>] [reinject_guideline=<true|false>] [model=<text>] [effort=<text>] review_instruction=<レビュー指示>
 ```
 
 ## 手順
@@ -52,6 +60,7 @@ model: sonnet
 
 注意:
 - 入力プロンプトで session_id が指定された場合に限り `--session-id` オプションを付与する
+- 入力プロンプトで model / effort が指定された場合に限り `--model` / `--effort` オプションを付与する。ユーザーが明示的に指定していない場合は付与しないこと（既定値が使われる）
 - 入力プロンプトで reinject_guideline=true が指定された場合に限り `--inject-fixed-prompt` オプションを付与する（false や未指定の場合は付与しない）
 - `CLAUDE_PLUGIN_ROOT` と `CLAUDE_PLUGIN_DATA` は additionalContext で提供された値を使用し、コマンド実行時に環境変数として export する
 - review_instruction の値は改変せず原文のまま記載すること。
@@ -64,6 +73,8 @@ export CLAUDE_PLUGIN_DATA="${CLAUDE_PLUGIN_DATA}"
   --agent claude-review \
   --lock-prefix claude \
   [--session-id "<SESSION_ID>"] \
+  [--model "<MODEL>"] \
+  [--effort "<EFFORT>"] \
   [--inject-fixed-prompt] \
   <<'EOF'
 <review_instruction の値>

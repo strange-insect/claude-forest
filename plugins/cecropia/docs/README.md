@@ -2,7 +2,7 @@
 
 よく使う機能をまとめた Claude Code の基本プラグイン。
 
-外部 AI（Opus）との 1問1答・コードレビュー、GitHub PR の作成・取得、PlantUML 変換、セッションエクスポートなど、日常的に使うユーティリティを agent と skill として提供する。
+別セッションの Claude との 1問1答・コードレビュー・ファイル書き込みを含む作業、GitHub PR の作成・取得、PlantUML 変換、セッションエクスポートなど、日常的に使うユーティリティを agent と skill として提供する。
 
 ## 動作環境
 
@@ -36,16 +36,20 @@ claude plugin install cecropia@claude-forest
 
 | 環境変数 | 対象 agent | 説明 |
 |---------|-----------|------|
-| `CLAUDE_ASK_DEFAULT_MODEL` | `claude-ask` | 使用するモデル。`<model>` または `<model>/<effort>` 形式。未設定または空文字列の場合は既定モデルを使用する |
+| `CLAUDE_ASK_DEFAULT_MODEL` | `claude-ask` | 使用するモデル。`<model>` または `<model>,<effort>` 形式（区切りはカンマ）。未設定または空文字列の場合は既定モデルを使用する |
 | `CLAUDE_REVIEW_DEFAULT_MODEL` | `claude-review` | 同上 |
+| `CLAUDE_TASK_DEFAULT_MODEL` | `claude-task` | 同上 |
+
+※ 各 agent の呼び出し時に `model=` / `effort=` を指定した場合はそちらが優先される（ユーザーが明示的に指定した場合のみ使用される）
 
 ## agent 一覧
 
 | agent 名 | 説明 |
 |---------|------|
-| `claude-ask` | 別セッションのOpusモデルと会話する |
-| `claude-review` | 別セッションの Claude Opus モデルでコードレビューを行う |
-| `claude-pairing` | 現在の Claude セッションを Opus セッションに 1:1 でペアリングする |
+| `claude-ask` | 別セッションの Claude と会話する |
+| `claude-review` | 別セッションの Claude でコードレビューを行う |
+| `claude-task` | 別セッションの Claude にファイル書き込みを含む作業を依頼する |
+| `claude-pairing` | 現在の Claude セッションを別セッションの Claude に 1:1 でペアリングする |
 | `get-pr-info` | GitHub PR の情報を取得する |
 | `plant-uml` | PlantUML ソースコードと 画像(Kroki URL) の相互変換、ソースコードテキスト・Markdownのコードスニペットに対応 |
 | `export-session` | Claude Code のセッション会話全文を Markdown ファイルにエクスポートする |

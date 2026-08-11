@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""claude-review: claude -p + Opus モデルでコードレビューを実行し、結果を JSON で返す。
+"""claude-review: claude -p でコードレビューを実行し、結果を JSON で返す。
 
 呼び出し:
-    claude-review.py [--session-id UUID] [--inject-fixed-prompt] --message "レビュー指示"
-    claude-review.py [--session-id UUID] [--inject-fixed-prompt]  # stdin からメッセージを読む
+    claude-review.py [--session-id UUID] [--inject-fixed-prompt] [--model MODEL] [--effort EFFORT] --message "レビュー指示"
+    claude-review.py [--session-id UUID] [--inject-fixed-prompt] [--model MODEL] [--effort EFFORT]  # stdin からメッセージを読む
 
 新規セッション時は必ず固定プロンプト（役割・出力ルール・標準観点）を先頭に付加する。
 継続セッション時は通常付加しないが、`--inject-fixed-prompt` 指定時のみ付加する。
@@ -74,10 +74,10 @@ def main() -> int:
         )
         return 1
 
-    message, session_id, flags = common.parse_args(sys.argv[1:])
+    message, session_id, flags, overrides = common.parse_args(sys.argv[1:])
     prompt = build_prompt(message, session_id, inject_fixed_prompt=flags.get("inject_fixed_prompt", False))
 
-    model, effort = common.resolve_model("CLAUDE_REVIEW_DEFAULT_MODEL")
+    model, effort = common.resolve_model("CLAUDE_REVIEW_DEFAULT_MODEL", overrides=overrides)
 
     tmp_output = common.make_temp("claude-review-output-")
     tmp_stderr = common.make_temp("claude-review-err-")
@@ -88,9 +88,9 @@ def main() -> int:
             "-p",
             "--output-format",
             "json",
-            "--model",
-            model or "Opus",
         ]
+        if model:
+            cmd += ["--model", model]
         if effort:
             cmd += ["--effort", effort]
         if session_id:
