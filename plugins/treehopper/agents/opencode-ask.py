@@ -84,9 +84,7 @@ def main() -> int:
     message, session_id, _flags, overrides = common.parse_args(sys.argv[1:])
     prompt = build_prompt(message, session_id)
 
-    model, effort = common.resolve_model(
-        "OPENCODE_ASK_DEFAULT_MODEL", model_contains_slash=True, overrides=overrides
-    )
+    model, effort = common.resolve_model("OPENCODE_ASK_DEFAULT_MODEL", overrides=overrides)
 
     tmp_jsonl = common.make_temp("opencode-ask-jsonl-")
     tmp_stderr = common.make_temp("opencode-ask-err-")

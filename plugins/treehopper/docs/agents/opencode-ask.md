@@ -109,12 +109,11 @@ agent は**ユーザーが明示的にモデルや effort を指定した場合�
 | 書式 | 例 | 動作 |
 |---|---|---|
 | `<model>` | `anthropic/claude-sonnet-4` | モデルのみ指定する |
-| `<model>/<effort>` | `anthropic/claude-sonnet-4/high` | モデルと reasoning effort を指定する |
+| `<model>,<effort>` | `anthropic/claude-sonnet-4,high` | モデルと reasoning effort を指定する |
 | 未設定 / 空文字列 | — | opencode CLI 既定のモデルを使用する |
 
 呼び出し時の指定・環境変数のいずれで指定した値も、`opencode` の `-m`（model）と `--variant`（effort）にそのまま渡される。プラグイン側で値の妥当性は検証しないため、不正な値を指定した場合は opencode 側がエラーを返し、その内容がログの「エラー情報」に記録される。
 
-opencode のモデル指定は `provider/model` 形式でモデル名自体に `/` を含むため、`/` 区切りが 3 要素以上の場合のみ末尾を effort とみなす。`anthropic/claude-sonnet-4` は model のみ、`anthropic/claude-sonnet-4/high` は model + effort と解釈される。
 ## エラー処理
 
 | 状況 | 動作 |

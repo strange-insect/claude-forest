@@ -31,7 +31,7 @@ claude plugin install aphid@claude-forest
 
 | 環境変数 | 対象 agent | 説明 |
 |---------|-----------|------|
-| `CODEX_ASK_DEFAULT_MODEL` | `codex-ask` | 使用するモデル。`<model>` または `<model>/<effort>` 形式。未設定または空文字列の場合は既定モデルを使用する |
+| `CODEX_ASK_DEFAULT_MODEL` | `codex-ask` | 使用するモデル。`<model>` または `<model>,<effort>` 形式（区切りはカンマ）。未設定または空文字列の場合は既定モデルを使用する |
 | `CODEX_REVIEW_DEFAULT_MODEL` | `codex-review` | 同上 |
 | `CODEX_TASK_DEFAULT_MODEL` | `codex-task` | 同上 |
 

@@ -31,7 +31,7 @@ claude plugin install treehopper@claude-forest
 
 | 環境変数 | 対象 agent | 説明 |
 |---------|-----------|------|
-| `OPENCODE_ASK_DEFAULT_MODEL` | `opencode-ask` | 使用するモデル。`<provider/model>` または `<provider/model>/<effort>` 形式。未設定または空文字列の場合は既定モデルを使用する |
+| `OPENCODE_ASK_DEFAULT_MODEL` | `opencode-ask` | 使用するモデル。`<provider/model>` または `<provider/model>,<effort>` 形式（区切りはカンマ）。未設定または空文字列の場合は既定モデルを使用する |
 | `OPENCODE_REVIEW_DEFAULT_MODEL` | `opencode-review` | 同上 |
 | `OPENCODE_TASK_DEFAULT_MODEL` | `opencode-task` | 同上 |
 

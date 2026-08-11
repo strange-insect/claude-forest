@@ -30,28 +30,17 @@ def resolve_command(name: str) -> tuple[str, bool]:
     return resolved, False
 
 
-def split_model_spec(raw: str, model_contains_slash: bool = False) -> tuple[str, str]:
-    """`<model>[/<effort>]` 形式の文字列を (model, effort) に分解する。
-
-    空文字列の場合は ("", "") を返す。
-
-    model_contains_slash=True の CLI（opencode の `provider/model` 形式）では
-    モデル名自体に `/` を含むため、区切りが 3 要素以上の場合のみ末尾を effort と
-    みなす（`anthropic/claude-sonnet-4/high` → model=anthropic/claude-sonnet-4, effort=high）。
-    """
+def split_model_spec(raw: str) -> tuple[str, str]:
+    """`<model>[,<effort>]` 形式の文字列を (model, effort) に分解する。"""
     raw = raw.strip()
     if not raw:
         return "", ""
-    parts = raw.split("/")
-    min_parts = 3 if model_contains_slash else 2
-    if len(parts) >= min_parts:
-        return "/".join(parts[:-1]), parts[-1]
-    return raw, ""
+    model, _, effort = raw.partition(",")
+    return model.strip(), effort.strip()
 
 
 def resolve_model(
     env_var: str,
-    model_contains_slash: bool = False,
     overrides: dict[str, str] | None = None,
 ) -> tuple[str, str]:
     """使用する (model, effort) を決定する。
@@ -69,9 +58,7 @@ def resolve_model(
     effort = str(overrides.get("effort", "")).strip()
     if model and effort:
         return model, effort
-    env_model, env_effort = split_model_spec(
-        os.environ.get(env_var, ""), model_contains_slash
-    )
+    env_model, env_effort = split_model_spec(os.environ.get(env_var, ""))
     return model or env_model, effort or env_effort
 
 

@@ -98,9 +98,7 @@ def main() -> int:
     message, session_id, flags, overrides = common.parse_args(sys.argv[1:])
     prompt = build_prompt(message, session_id, inject_fixed_prompt=flags.get("inject_fixed_prompt", False))
 
-    model, effort = common.resolve_model(
-        "OPENCODE_TASK_DEFAULT_MODEL", model_contains_slash=True, overrides=overrides
-    )
+    model, effort = common.resolve_model("OPENCODE_TASK_DEFAULT_MODEL", overrides=overrides)
 
     tmp_jsonl = common.make_temp("opencode-task-jsonl-")
     tmp_stderr = common.make_temp("opencode-task-err-")

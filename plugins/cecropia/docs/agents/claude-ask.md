@@ -108,7 +108,7 @@ agent は**ユーザーが明示的にモデルや effort を指定した場合�
 | 書式 | 例 | 動作 |
 |---|---|---|
 | `<model>` | `opus` | モデルのみ指定する |
-| `<model>/<effort>` | `opus/high` | モデルと reasoning effort を指定する |
+| `<model>,<effort>` | `opus,high` | モデルと reasoning effort を指定する |
 | 未設定 / 空文字列 | — | `claude` CLI 既定のモデルを使用する |
 
 呼び出し時の指定・環境変数のいずれで指定した値も、`claude` の `--model`（model）と `--effort`（effort）にそのまま渡される。プラグイン側で値の妥当性は検証しないため、不正な値を指定した場合は claude 側がエラーを返し、その内容がログの「エラー情報」に記録される。
