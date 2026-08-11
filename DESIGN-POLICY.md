@@ -28,13 +28,14 @@ task 系は書き込みを許可するため、担保手段も CLI ごとに異�
 | agent | CLI | 指定 | 書き込み範囲 |
 | --- | --- | --- | --- |
 | `codex-task` | codex | `--sandbox workspace-write` | OS レベルのサンドボックスにより、ワークスペース外への書き込みは遮断される |
+| `claude-task` | claude | `--tools` に `Write` / `Edit` を追加（`--dangerously-skip-permissions` 併用） | 許可リストに `Bash` を含むため、ファイル編集に限らず外部コマンドの実行や作業ディレクトリ外への副作用も発生し得る |
 | `opencode-task` | opencode | `--agent build --auto` | `--auto` は明示的に `deny` されていない権限要求をすべて承認するため、ファイル編集に限らず外部コマンドの実行や作業ディレクトリ外への副作用も発生し得る |
 
 いずれも非対話実行では権限確認プロンプトに応答できないため、承認なしに実行される挙動は意図的なものである。
 
 ## ログ保存ディレクトリの .gitignore
 
-`claude-ask` / `claude-review` / `codex-ask` / `codex-review` / `opencode-ask` / `opencode-review` / `opencode-task` / `codex-task` のログ保存先ディレクトリ（`.llm-ask/`）を新規作成する際は、`*` を対象とした `.gitignore` を配置して git 管理対象外とする。ディレクトリが既に存在する場合は、元の git 管理ポリシーを尊重して `.gitignore` を作成・変更しない。
+`claude-ask` / `claude-review` / `claude-task` / `codex-ask` / `codex-review` / `codex-task` / `opencode-ask` / `opencode-review` / `opencode-task` のログ保存先ディレクトリ（`.llm-ask/`）を新規作成する際は、`*` を対象とした `.gitignore` を配置して git 管理対象外とする。ディレクトリが既に存在する場合は、元の git 管理ポリシーを尊重して `.gitignore` を作成・変更しない。
 
 ## 大量出力はファイルに保存してパスのみ返す
 
