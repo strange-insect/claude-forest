@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "cecropia",
-      "version": "0.0.4",
+      "version": "0.0.5",
       "description": "よく使う機能の基本セット",
       "category": "productivity",
       "author": {
@@ -16,7 +16,7 @@
     },
     {
       "name": "aphid",
-      "version": "0.0.5",
+      "version": "0.0.6",
       "description": "Codex Integration",
       "category": "productivity",
       "author": {
@@ -26,7 +26,7 @@
     },
     {
       "name": "treehopper",
-      "version": "0.0.2",
+      "version": "0.0.3",
       "description": "opencode Integration",
       "category": "productivity",
       "author": {
