@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# PreToolUse フック: codex-ask / codex-review / codex-task 呼び出し時に session_id を検証する。
+# PreToolUse フック: codex-ask / codex-review 呼び出し時に session_id を検証する。
 #
 # ペアリングファイルパスは CLAUDE_PLUGIN_DATA から組み立てる。
 #
@@ -10,12 +10,12 @@
 
 FLAT="$(cat | tr -d '\n')"
 
-# codex-ask / codex-review / codex-task のみ対象（codex-pairing 自身は除外）
+# codex-ask / codex-review のみ対象（codex-task / codex-pairing は除外）
 SUBAGENT_TYPE="$(printf '%s' "$FLAT" \
   | grep -o '"subagent_type"[[:space:]]*:[[:space:]]*"[^"]*"' \
   | sed 's/.*"\([^"]*\)"$/\1/')"
 case "$SUBAGENT_TYPE" in
-  *codex-ask|*codex-review|*codex-task) ;;
+  *codex-ask|*codex-review) ;;
   *) exit 0 ;;
 esac
 

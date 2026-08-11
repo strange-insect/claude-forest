@@ -109,12 +109,6 @@ opencode の作業報告は形式が定まらないと呼び出し元に作業�
 
 実行範囲を絞りたい場合は opencode 側の permission 設定で制御する。設定方法は opencode のドキュメントを参照（https://opencode.ai/docs/permissions/）。
 
-## ペアリング
-
-`opencode-pairing` によるペアリング後は、`opencode-ask` / `opencode-review` と同様に、ペアリングされたセッション ID 以外での呼び出しが PreToolUse フックによってブロックされる。
-
-新しい opencode セッションで作業したい場合は、`opencode-pairing` を再実行してペアリング先を切り替える。
-
 ## モデルの指定
 
 使用するモデルと reasoning effort は、呼び出し時の `model=` / `effort=` 指定と環境変数 `OPENCODE_TASK_DEFAULT_MODEL` の 2 通りで指定できる。

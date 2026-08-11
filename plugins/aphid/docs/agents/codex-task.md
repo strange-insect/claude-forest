@@ -107,12 +107,6 @@ codex のサンドボックスは OS レベルで強制されるため、`worksp
 
 `exec` は元々非対話で承認を求めないため、承認関連のオプションは指定していない。
 
-## ペアリング
-
-`codex-pairing` によるペアリング後は、`codex-ask` / `codex-review` と同様に、ペアリングされたセッション ID 以外での呼び出しが PreToolUse フックによってブロックされる。
-
-新しい Codex セッションで作業したい場合は、`codex-pairing` を再実行してペアリング先を切り替える。
-
 ## モデルの指定
 
 使用するモデルと reasoning effort は、呼び出し時の `model=` / `effort=` 指定と環境変数 `CODEX_TASK_DEFAULT_MODEL` の 2 通りで指定できる。

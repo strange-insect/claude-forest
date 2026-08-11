@@ -2,7 +2,7 @@
 name: codex-pairing
 description: |-
   現在の Claude セッションと Codex セッションを 1:1 でペアリングする。
-  ペアリング後はペアリングされた セッション ID 以外での codex-ask / codex-review / codex-task が禁止される。
+  ペアリング後はペアリングされた セッション ID 以外での codex-ask / codex-review が禁止される（codex-task は対象外）。
   ユーザーが「codexとペアリング」「codex-pairing」と言った場合に使用。
 
   呼び出しプロンプト形式: プトンプトなし
@@ -68,7 +68,7 @@ grep -q "^CLAUDE: ${CLAUDE_SESSION_ID}, CODEX: ${CODEX_SID}$" "${PAIRING_FILE}" 
 
 ```
 ペアリングを実施しました。
-以下の Session ID 以外での codex-ask, codex-review, codex-task は禁止されます。
+以下の Session ID 以外での codex-ask, codex-review は禁止されます。
 Codex Session ID: <手順 2 の CODEX_SESSION_ID の値>
 ```
 
