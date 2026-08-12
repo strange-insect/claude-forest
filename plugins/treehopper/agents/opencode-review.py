@@ -26,37 +26,30 @@ _spec.loader.exec_module(_m)  # type: ignore[union-attr]
 extract_opencode_session_id = _m.extract_opencode_session_id
 extract_last_message = _m.extract_last_message
 
-FIXED_PROMPT = """コードレビューを実施してください。
+PROMPT_HEADER = """コードレビューを実施してください。
 コードの修正は一切行わず、レビューコメントの出力のみを行ってください。
 ファイルの読み取りは許可されていますが、書き込みは行わないでください。
 
-【レビュー出力ルール】
-- 問題の深刻度を示すこと（Critical / Warning / Info / Suggestion）
-- ファイルパスと行番号を明記すること
-- 修正案がある場合は具体的なコード例を含めること（実際の修正はしない）
-- 変更差分だけでなく、変更箇所の周辺コードも読み、以下を幅広く・深くレビューすること
+ユーザからの指示文はシステムからの指示文よりも優先されます。
+指示内容に衝突がある場合は、ユーザからの指示文を優先してください。
 
-【標準的なレビュー観点】
-
-1. **正確性・ロジック**: バグ、エッジケース、境界値、競合状態
-2. **セキュリティ**: インジェクション、認証・認可漏れ、機密情報の露出
-3. **ドキュメント整合性**: README・コメント・JSDoc/docstring・CHANGELOG 等の更新漏れ
-4. **周辺コードとの整合性**: 変更していない関数・クラス・設定・テストが変更後の実装と矛盾していないか
-5. **類似機能との整合性**: コードベース内の類似した実装・命名規則・パターンと乖離していないか
-6. **ワークフロー・連携影響**: 上流・下流の処理フロー、呼び出し元・呼び出し先との接続部分に影響が出ていないか
-7. **データライフサイクル**: 同じデータを参照・更新する機能との不整合
-8. **テスト網羅性**: 追加・変更したロジックに対応するテストが存在するか
-9. **保守性**: 命名、重複、抽象化の適切さ
-10. **パフォーマンス**: 不要な計算・I/O・メモリ使用
-
-【ユーザからの指示文】
+## **システムからの指示文**
 """
+
+PROMPT_FOOTER = """
+## **ユーザからの指示文**
+"""
+
+
+def build_fixed_prompt() -> str:
+    """出力ルールとレビュー観点は opencode-review-guidelines.txt から読み込む。"""
+    return PROMPT_HEADER + common.load_prompt("opencode-review-guidelines.txt") + PROMPT_FOOTER
 
 
 def build_prompt(message: str, session_id: str = "", inject_fixed_prompt: bool = False) -> str:
     """初回（session_id 無し）は必ず、継続時は inject_fixed_prompt=True の場合のみ固定プロンプトを付加。"""
     if not session_id or inject_fixed_prompt:
-        return FIXED_PROMPT + message
+        return build_fixed_prompt() + message
     return message
 
 

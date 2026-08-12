@@ -63,7 +63,8 @@ model: sonnet
 - 入力プロンプトで model / effort が指定された場合に限り `--model` / `--effort` オプションを付与する。ユーザーが明示的に指定していない場合は付与しないこと（既定値が使われる）
 - 入力プロンプトで reinject_guideline=true が指定された場合に限り `--inject-fixed-prompt` オプションを付与する（false や未指定の場合は付与しない）
 - `CLAUDE_PLUGIN_ROOT` と `CLAUDE_PLUGIN_DATA` は additionalContext で提供された値を使用し、コマンド実行時に環境変数として export する
-- review_instruction の値は改変せず原文のまま記載すること。
+- `review_instruction` はMarkdown形式のテンプレートに挿入される。見出しレベル2(`##`)のセクションに挿入されるため、`review_instruction` 内のMarkdown見出しはすべてレベル3以下(`###`～)となるよう調整する。
+- `review_instruction` の値は見出しレベルの調整を除き、改変せず原文のまま記載すること。
 - エージェントはログファイルを開いて内容を読まないこと。
 
 ```bash
