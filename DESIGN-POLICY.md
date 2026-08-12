@@ -48,7 +48,7 @@ skill の `context: fork` は現時点では記憶（メッセージ履歴）を
 
 ## 共通モジュールはプラグイン間で同一内容とする
 
-複数プラグインが同名で持つモジュール（`bin/python-wrapper.sh` / `bin/ask-pipeline.py` / `bin/save-ask-log.py` / `bin/_runtime_check.py` / `agents/_ask_common.py` / `hooks/session-start.sh` / `hooks/subagent-start.sh`）は、全プラグインで同一内容とする。
+複数プラグインが同名で持つモジュール（`bin/python-wrapper.sh` / `bin/ask-pipeline.py` / `bin/save-ask-log.py` / `bin/_runtime_check.py` / `agents/_ask_common.py` / `hooks/session-start.sh` / `hooks/subagent-start.sh`）と、CLI ごとに名前が異なるレビュー観点定義（`agents/*-review-guidelines.txt`）は、全プラグインで同一内容とする。
 
 これらは汎用的な機能として設計し、プラグイン固有の機能や設定をこれらのモジュールに持ち込まない。
 固有の変更が必要になる場合、設計が間違っているので共通部品と固有機能の分割設計を見直す。

@@ -111,6 +111,18 @@ def parse_args(argv: list[str]) -> tuple[str, str, dict[str, bool], dict[str, st
     return message, session_id, flags, overrides
 
 
+def load_prompt(name: str) -> str:
+    """同じ agents ディレクトリに外出しした固定プロンプト断片を読み込む。
+
+    プロンプト本文はレビュー結果を左右するため、欠落・破損は握りつぶさず例外にする。
+    """
+    path = Path(__file__).resolve().parent / name
+    try:
+        return path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise RuntimeError(f"プロンプトファイルの読み込みに失敗しました: {path}") from exc
+
+
 def make_temp(prefix: str) -> Path:
     """同一の cleanup 経路で扱える Path を返す（fd は閉じる）。"""
     fd, path = tempfile.mkstemp(prefix=prefix)
