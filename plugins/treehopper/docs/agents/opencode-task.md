@@ -1,16 +1,17 @@
 # opencode-task
 
 opencode CLI にファイルの変更などを含む作業を依頼し、作業報告を Markdown ログファイルに保存する。
-`session_id` を使用して完了後のセッションに追加作業指示を与えたり、opencode-ask を使用して作業内容の質疑を行うことができる。
+**作業の実行中に追加の指示を渡せる**のがこの agent の特徴。
 
 ## 基本情報
 
 | 項目 | 値 |
 |---|---|
 | agent 名 | `opencode-task` |
-| 実装 | `agents/opencode-task.py` |
+| 実装 | `bin/task-control.py` + `bin/task-supervisor.py` + `agents/_steer_opencode.py` |
 | 使用モデル | `sonnet` |
 | 実行コンテキスト | subagent（独立コンテキスト） |
+| opencode の起動形態 | `opencode serve` |
 
 ## トリガーフレーズ
 
@@ -32,6 +33,54 @@ opencode CLI にファイルの変更などを含む作業を依頼し、作業�
 | `model=<MODEL>` | 省略可 | 使用するモデル。**ユーザーが明示的に指定した場合のみ渡す** |
 | `effort=<EFFORT>` | 省略可 | reasoning effort。**ユーザーが明示的に指定した場合のみ渡す** |
 | `reinject_guideline=<true\|false>` | 省略可 | 固定プロンプト（作業報告の形式指定）を先頭に付加するか。初回は値に関わらず付加される |
+
+実行中の指示のための引数は無い。`SendMessage` の自由文で送る（次節）。
+
+## 実行中の指示
+
+`opencode-task` を**バックグラウンドで起動**し、実行中に `SendMessage` でメッセージを送る。
+
+```
+Agent(opencode-task, "instruction=...", run_in_background: true)
+    ↓ ユーザーから追加の指示
+SendMessage(opencode-task, "refresh token は触らず、cookie の SameSite 設定を先に疑って")
+    ↓
+subagent が原文のまま opencode へ prompt_async で投入する
+```
+
+フォアグラウンドで起動した場合、メインエージェントは subagent の完了までブロックされるため
+指示を渡せない。途中で指示を追加する可能性がある作業は必ずバックグラウンドで起動する。
+
+投入した指示を opencode が読むのは**次のツール実行の境界**である。
+長時間のコマンド（テスト実行など）が走っている最中に送っても、そのコマンドが終わるまでは反映されない。
+
+`steer` は指示を opencode へ投入できたかどうかが確定するまで戻らない。作業が既に終わっていた場合は
+投入されずに失敗を返し、subagent が呼び出し元にその旨を伝える。
+
+## 実行モデル
+
+```
+メインエージェント
+  │ Agent(opencode-task, ..., run_in_background: true)
+  │      … SendMessage …
+  ▼
+opencode-task subagent
+  │ 1. task-control.py start            → 作業を開始する
+  │ 2. task-control.py wait              を反復
+  │      ← スライスとスライスの間で SendMessage が届く
+  │ 3. task-control.py steer            届いたメッセージを opencode へ伝達
+  │ 4. wait がログパスを返したら終了
+  ▼
+task-supervisor.py（subagent の子プロセス）
+  ▼  HTTP (127.0.0.1)
+opencode serve
+```
+
+`wait` は 60 秒のスライスで刻む。subagent はフォアグラウンドの Bash に入っている間
+メッセージを受け取れないため、スライスを長くすると指示を渡せない時間が延びる。
+
+supervisor は subagent の子プロセスであり、subagent の終了に伴って一緒に終了する。
+作業が終わった時点でログを書き出し、ワーカーを終了する。
 
 ## 親セッションへの応答
 
@@ -58,7 +107,7 @@ opencode が作業ディレクトリを変更している可能性があるた�
 | ヘッダー | 日時・モード（new / continuation）・ディレクトリ・セッション ID |
 | メッセージ | 送信した作業指示の原文 |
 | opencode の回答 | opencode からの作業報告（固定プロンプトで指定した形式） |
-| エラー情報 | エラー時のみ。exit code と stderr の内容 |
+| エラー情報 | エラー時のみ |
 
 ログファイル名のパターン：`<YYYYMMDD_HHMMSS_mmm>_<プロジェクト名>_opencode-task.md`
 
@@ -71,30 +120,31 @@ opencode が作業ディレクトリを変更している可能性があるた�
 
 ## opencode CLI 実行引数
 
-opencode CLI は以下の固定引数で起動される。
+`opencode serve --port 0 --hostname 127.0.0.1` を起動し、待ち受けポートを起動ログから読み取る。
+`--port 0` で OS に空きポートを選ばせるのは、同時に走る別の run とポートが衝突しないようにするため。
 
-| オプション | 値 | 説明 |
-|---|---|---|
-| サブコマンド | `run` | 実行モード（非対話。メッセージは stdin から渡す） |
-| `--format` | `json` | イベントを JSON 形式で出力 |
-| `-m` / `--variant` | — | `OPENCODE_TASK_DEFAULT_MODEL` を指定した場合のみ付与 |
-| `--agent` | `build` | opencode の既定エージェント: ファイル編集・コマンド実行が可能 |
-| `--auto` | — | 明示的に拒否されていない権限を自動承認する（非対話実行のため） |
+以降は HTTP API を使う。
 
-`session_id` を指定した場合は `--session <session_id>` が付加される。
+| リクエスト | 指定 |
+|---|---|
+| `POST /session` | `agent: build` / `permission`（全許可）/ `model` |
+| `PATCH /session/{id}` | `permission`（全許可）。継続セッションに適用する |
+| `POST /session/{id}/prompt_async` | `parts`（作業指示・実行中の指示とも同じ形式）/ `variant` |
+| `GET /session/{id}/message` | 作業報告の収集と完了判定のためのポーリング |
+| `GET /session/status` | 実行中の指示を投入する直前の状態確認 |
 
-回答テキストの取得方法は `opencode-ask` と同じ（`--format json` の出力から `type == "text"` イベントを messageID ごとにまとめ、最後の messageID 分を組み立てる）。
+`session_id` を指定した場合はセッションを新規作成せず、その ID をそのまま使う。
+ポーリング間隔は 2 秒で、これが完了検知の遅延の上限になる。
 
 ### 固定プロンプト（作業報告の形式指定）
 
 opencode の作業報告は形式が定まらないと呼び出し元に作業内容が正しく伝わらないため、`opencode-review` と同様に固定プロンプトを作業指示の先頭に付加する。
-
-固定プロンプトは以下のセクション構成で報告するよう指示する。
+本体は `agents/opencode-task-guidelines.txt` に外出ししている。
 
 | セクション | 内容 |
 |---|---|
 | 指示内容 | 今回の作業のために受けた指示内容 |
-| 作業結果 | 達成状況（完了 / 一部完了 / 未完了、達成した完了条件・達成できなかった完了条件）。指示外の作業を行った場合はその内容と理由 |
+| 作業結果 | 達成状況。指示外の作業を行った場合はその内容と理由 |
 | 成果物・変更内容 | 成果物を特定する情報（ファイルパス等）と概要、その他の変更対象と変更内容（差分そのものは貼らない） |
 | 作業中に発生した問題・課題 | 発生した問題（ファクトのみ）と、それに対する対応内容・対応理由 |
 | 補足 | その他依頼元に伝達すべき情報 |
@@ -103,11 +153,15 @@ opencode の作業報告は形式が定まらないと呼び出し元に作業�
 
 ### 権限について
 
-本 agent は**制限なくあらゆる作業を実行できること**を目的としている。`opencode-ask` / `opencode-review` が `--agent plan` で `edit` を既定 `deny` にしているのに対し、本 agent は `--agent build` と `--auto` を使う。
+`opencode-ask` / `opencode-review` が `--agent plan`（`edit` を既定 `deny`）で書き込みを遮断しているのに対し、本 agent は `agent: build` とセッションの `permission` 全許可を使い、**作業ディレクトリへの変更を承認なしに許可する**。
 
-`--auto` が自動承認するのは `edit` だけではない。**明示的に `deny` されていない権限要求はすべて承認される**ため、ファイル編集に加えて外部コマンドの実行、作業ディレクトリ外への副作用なども承認なしに行われ得る。非対話実行では権限の確認プロンプトに応答できないため、この挙動は意図的なものである。
+`permission` を全許可にすると、明示的に `deny` されていない権限要求をすべて承認する。
+そのため **ファイル編集に限らず外部コマンドの実行や作業ディレクトリ外への副作用も発生し得る**。
+OS レベルのサンドボックスは無いため、書き込み範囲を仕組みで限定することはできない。
 
-実行範囲を絞りたい場合は opencode 側の permission 設定で制御する。設定方法は opencode のドキュメントを参照（https://opencode.ai/docs/permissions/）。
+セッションに設定した `permission` は作業後も残るが、`opencode-ask` / `opencode-review` が使う
+`--agent plan` は書き込みツール自体を持たないため、同じ `session_id` を引き継いでも読み取り専用は保たれる。
+なお `PATCH /session/{id}` の `permission` は既存の規則へ追記されるため、規則を取り除く手段は無い。
 
 ## モデルの指定
 
@@ -121,17 +175,16 @@ opencode の作業報告は形式が定まらないと呼び出し元に作業�
 
 `model` と `effort` は独立に上書きされる。`model` だけを明示指定した場合、effort は環境変数由来の値（無ければ未指定）のままになる。
 
-agent は**ユーザーが明示的にモデルや effort を指定した場合のみ** `--model` / `--effort` を付与する。指定が無い場合は付与せず、環境変数または既定モデルが使われる（従来と同じ挙動）。
-
 環境変数 `OPENCODE_TASK_DEFAULT_MODEL` の書式は次のとおり。
 
 | 書式 | 例 | 動作 |
 |---|---|---|
-| `<model>` | `anthropic/claude-sonnet-4` | モデルのみ指定する |
-| `<model>,<effort>` | `anthropic/claude-sonnet-4,high` | モデルと reasoning effort を指定する |
+| `<model>` | `anthropic/claude-sonnet-5` | モデルのみ指定する（`provider/model` 形式） |
+| `<model>,<effort>` | `anthropic/claude-sonnet-5,high` | モデルと variant を指定する |
 | 未設定 / 空文字列 | — | opencode CLI 既定のモデルを使用する |
 
-呼び出し時の指定・環境変数のいずれで指定した値も、`opencode` の `-m`（model）と `--variant`（effort）にそのまま渡される。プラグイン側で値の妥当性は検証しないため、不正な値を指定した場合は opencode 側がエラーを返し、その内容がログの「エラー情報」に記録される。
+モデルは `provider/model` 形式で指定する。この形式でない値を指定した場合はエラーになる。
+値そのものの妥当性は検証しないため、存在しないモデルを指定した場合は opencode 側がエラーを返し、その内容がログの「エラー情報」に記録される。
 
 ## エラー処理
 
@@ -140,7 +193,8 @@ agent は**ユーザーが明示的にモデルや effort を指定した場合�
 | `instruction` が不足 | 引数不正メッセージを出力して終了 |
 | `opencode` 未インストール | `'opencode' コマンドが見つかりません` を出力して終了 |
 | Python 3.10+ が見つからない | `python-wrapper.sh` が固定メッセージで終了 |
-| opencode の実行エラー | エラー内容をログに含めてパスを返す（exit code 1） |
+| `opencode serve` の起動失敗 | `start` が失敗を返す。詳細は `start` の出力に含まれる |
+| 作業中の実行エラー | `wait` がエラー内容とログのパスを返す（exit code 1） |
 
 opencode の実行が途中で失敗した場合、**変更が中途半端な状態で残る可能性がある**。エラー時は `git status --short --untracked-files=all` で作業ディレクトリの状態を確認する。作業ディレクトリ外への副作用が疑われる場合はログの作業内容も確認する。
 
@@ -150,11 +204,11 @@ opencode の実行が途中で失敗した場合、**変更が中途半端な状
 
 | ツール | 用途 |
 |---|---|
-| `opencode` | opencode CLI |
-| Python 3.10+ | パイプライン実行。`bin/python-wrapper.sh` が `${CLAUDE_PLUGIN_DATA}/venv` → `pyenv` → `conda` → `PATH` の順で解決する |
+| `opencode` | opencode CLI（`serve` サブコマンドを使う） |
+| Python 3.10+ | 制御スクリプトの実行。`bin/python-wrapper.sh` が `${CLAUDE_PLUGIN_DATA}/venv` → `pyenv` → `conda` → `PATH` の順で解決する |
 
 ### python ライブラリ
 
 | ライブラリ | 用途 |
 |---|---|
-| `filelock`（`requirements.txt`） | 起動時に `bin/python-wrapper.sh` が自動インストールする |
+| `filelock`（`requirements.txt`） | `ask-pipeline.py`（`opencode-ask` / `opencode-review`）が使う。起動時に `bin/python-wrapper.sh` が自動インストールする |

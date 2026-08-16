@@ -25,15 +25,15 @@ import importlib.util
 import json
 import os
 import re
-import shutil
-import subprocess
 import sys
-import tempfile
-from datetime import datetime
 from pathlib import Path
 
 from filelock import FileLock
 from filelock import Timeout as FileLockTimeout
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import _ask_log as asklog  # noqa: E402
 
 
 def die(msg: str, code: int = 1) -> None:
@@ -72,52 +72,6 @@ def _build_agent_prompt(
     return message
 
 
-def _make_file_stem(agent: str) -> str:
-    now = datetime.now()
-    ts = now.strftime("%Y%m%d_%H%M%S_") + f"{now.microsecond // 1000:03d}"
-    project = Path.cwd().name or "_"
-    return f"{ts}_{project}_{agent}"
-
-
-def _write_json(
-    json_path: Path,
-    agent: str,
-    message: str,
-    session_id: str,
-    mode: str,
-    answer: str,
-    status: str,
-    exit_code: int,
-    error_detail: str = "",
-) -> None:
-    """JSON ペイロードを json_path に書く。save-ask-log.py が読む形式。"""
-    model, _, type_ = agent.partition("-")
-    payload: dict[str, object] = {
-        "model": model,
-        "type": type_ or agent,
-        "mode": mode,
-        "session_id": session_id or "",
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "directory": str(Path.cwd()),
-        "project": Path.cwd().name or "_",
-        "message": message,
-        "answer": answer,
-        "status": status,
-        "exit_code": exit_code,
-    }
-    if error_detail:
-        payload["error_detail"] = error_detail
-    json_path.parent.mkdir(parents=True, exist_ok=True)
-    if os.name == "nt":
-        json_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
-    else:
-        old_umask = os.umask(0o077)
-        try:
-            json_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
-        finally:
-            os.umask(old_umask)
-
-
 def _cleanup_temp(json_path: Path, placeholder_log: str = "") -> None:
     candidates = [json_path]
     if placeholder_log:
@@ -129,60 +83,9 @@ def _cleanup_temp(json_path: Path, placeholder_log: str = "") -> None:
             pass
 
 
-def _safe_unlink(path: Path) -> None:
-    """Windows のファイルロックなど OSError を無視してファイルを削除する。"""
-    try:
-        path.unlink(missing_ok=True)
-    except OSError:
-        pass
-
-
-def _atomic_copy(src: Path, dst: Path) -> None:
-    """src を dst に書く。同ディレクトリの一時ファイルへ copy2 してから os.replace() で置換する。
-    Windows では直接上書きより FILE_SHARE_DELETE で開かれたファイルへの置換が通りやすい。
-    """
-    tmp = dst.parent / f".tmp-{dst.name}"
-    try:
-        shutil.copy2(src, tmp)
-        os.replace(tmp, dst)
-    except OSError:
-        _safe_unlink(tmp)
-        raise
-
-
-def run_step(script: Path, args: list[str]) -> tuple[str, int]:
-    """同一 Python インタプリタでスクリプトを実行し (stdout, exit_code) を返す。
-
-    python-wrapper.sh が解決済みのランタイム (sys.executable) をそのまま使うため、
-    各ステップで再度ランタイム解決のオーバーヘッドが発生しない。
-    """
-    try:
-        proc = subprocess.run(
-            [sys.executable, str(script), *args],
-            capture_output=True,
-            check=False,
-        )
-    except OSError as exc:
-        print(f"ERROR: {script.name} の実行に失敗しました: {exc}", file=sys.stderr)
-        return "", 1
-    stderr = proc.stderr.decode("utf-8", errors="replace").strip()
-    if stderr:
-        print(stderr, file=sys.stderr)
-    stdout = proc.stdout.decode("utf-8", errors="replace").strip()
-    return stdout, proc.returncode
-
-
-def git_toplevel() -> str | None:
-    """git リポジトリのルートを返す。リポジトリ外なら None。"""
-    try:
-        proc = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
-            capture_output=True,
-            check=True,
-        )
-        return proc.stdout.decode("utf-8", errors="replace").strip()
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return None
+#: ログ生成の実処理は _ask_log に集約している（task-supervisor.py と共有するため）。
+_safe_unlink = asklog.safe_unlink
+run_step = asklog.run_step
 
 
 def main() -> int:
@@ -266,56 +169,40 @@ def main() -> int:
             atexit.register(lock.release)
 
     # --- 出力先ディレクトリの決定（agent 実行前に行う）---
-    # 基準ディレクトリ: git リポジトリ内ならリポジトリルート、そうでなければカレントディレクトリ
-    base_dir = git_toplevel() or os.getcwd()
-
-    if not output_dir:
-        target_dir = Path(base_dir) / ".llm-ask"
-    elif os.path.isabs(output_dir):
-        target_dir = Path(output_dir)
-    else:
-        target_dir = Path(base_dir) / output_dir
-
-    # 新規作成時のみ .gitignore(*) を同梱。既存ディレクトリには触らない（ユーザーの Git 管理意図を尊重）
     try:
-        if not target_dir.is_dir():
-            target_dir.mkdir(parents=True, exist_ok=True)
-            (target_dir / ".gitignore").write_text("*\n", encoding="utf-8")
-        target_dir = target_dir.resolve()
-    except OSError as exc:
-        die(f"出力先ディレクトリの初期化に失敗しました: {exc}")
+        target_dir = asklog.resolve_target_dir(output_dir)
+    except asklog.AskLogError as exc:
+        die(str(exc))
 
     # --- ファイル名の先決定とプレースホルダー配置 ---
     # pending JSON → save-ask-log → target_dir の順でプレースホルダーを作る。
     # agent 実行後に同じファイル名で上書きされるため、フォーマットが完全に一致する。
     save_script = plugin_root_path / "bin" / "save-ask-log.py"
-    file_stem = _make_file_stem(agent)
-    log_prefix = agent.partition("-")[0]
-    json_dir = Path(tempfile.gettempdir()) / f"{log_prefix}-ask"
-    json_path = json_dir / f"{file_stem}.json"
+    file_stem = asklog.make_file_stem(agent)
 
     mode = "continuation" if session_id else "new"
     built_prompt = _build_agent_prompt(run_script, message, session_id, inject_fixed_prompt)
 
     try:
-        json_dir.mkdir(parents=True, exist_ok=True)
-        if os.name != "nt":
-            try:
-                os.chmod(json_dir, 0o700)
-            except OSError:
-                pass
-        _write_json(json_path, agent, built_prompt, session_id, mode,
-                    "（処理中...）", "pending", 0)
+        json_path = asklog.json_staging_dir(agent) / f"{file_stem}.json"
+        asklog.write_json(json_path, agent, built_prompt, session_id, mode,
+                          "（処理中...）", "pending", 0)
     except OSError as exc:
         die(f"プレースホルダー準備に失敗しました: {exc}")
 
     placeholder_log, _ = run_step(save_script, [str(json_path)])
     placeholder_md = target_dir / f"{file_stem}.md"
     if placeholder_log:
-        try:
-            shutil.copy2(placeholder_log, placeholder_md)
-        except OSError:
-            pass
+        source = Path(placeholder_log)
+        # 配置先と下書きが同じ場合に消すと、配置したファイル自体を消すことになる。
+        if source != placeholder_md:
+            try:
+                asklog.atomic_copy(source, placeholder_md)
+            except OSError:
+                pass
+            else:
+                # 一時領域の下書きは恒久保存先へ移した時点で役目を終える（DESIGN-POLICY）
+                _safe_unlink(source)
 
     # --- パイプライン実行 ---
     pipeline_exit = 0
@@ -364,8 +251,8 @@ def main() -> int:
 
     # Step 1 完了 JSON を書く
     try:
-        _write_json(json_path, agent, built_prompt, extracted_session_id, mode,
-                    answer, status, result_exit_code, error_detail)
+        asklog.write_json(json_path, agent, built_prompt, extracted_session_id, mode,
+                          answer, status, result_exit_code, error_detail)
     except OSError as exc:
         _cleanup_temp(json_path, placeholder_log)
         _safe_unlink(placeholder_md)
@@ -386,10 +273,15 @@ def main() -> int:
 
     # --- プレースホルダーを完成 Markdown で上書き ---
     try:
-        copied_path = target_dir / Path(log_path).name
-        _atomic_copy(Path(log_path), copied_path)
+        source = Path(log_path)
+        copied_path = target_dir / source.name
+        asklog.atomic_copy(source, copied_path)
         if copied_path != placeholder_md:
             _safe_unlink(placeholder_md)
+        # 一時領域の下書きは恒久保存先へ移した時点で役目を終える（DESIGN-POLICY）。
+        # 配置先が下書きと同じ場合に消すと、返すはずのログ自体を消すことになる。
+        if copied_path != source:
+            _safe_unlink(source)
     except OSError as exc:
         die(f"Markdown ログの配置に失敗しました: {exc}")
 

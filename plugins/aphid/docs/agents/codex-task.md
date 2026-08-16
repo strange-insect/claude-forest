@@ -1,16 +1,17 @@
 # codex-task
 
 OpenAI Codex CLI にファイルの変更などを含む作業を依頼し、作業報告を Markdown ログファイルに保存する。
-`session_id` を使用して完了後のセッションに追加作業指示を与えたり、`codex-ask` を使用して作業内容の質疑を行うことができる。
+**作業の実行中に追加の指示を渡せる**のがこの agent の特徴。
 
 ## 基本情報
 
 | 項目 | 値 |
 |---|---|
 | agent 名 | `codex-task` |
-| 実装 | `agents/codex-task.py` |
+| 実装 | `bin/task-control.py` + `bin/task-supervisor.py` + `agents/_steer_codex.py` |
 | 使用モデル | `sonnet` |
 | 実行コンテキスト | subagent（独立コンテキスト） |
+| Codex の起動形態 | `codex app-server` |
 
 ## トリガーフレーズ
 
@@ -32,6 +33,54 @@ OpenAI Codex CLI にファイルの変更などを含む作業を依頼し、作
 | `model=<MODEL>` | 省略可 | 使用するモデル。**ユーザーが明示的に指定した場合のみ渡す** |
 | `effort=<EFFORT>` | 省略可 | reasoning effort。**ユーザーが明示的に指定した場合のみ渡す** |
 | `reinject_guideline=<true\|false>` | 省略可 | 固定プロンプト（作業報告の形式指定）を先頭に付加するか。初回は値に関わらず付加される |
+
+実行中の指示のための引数は無い。`SendMessage` の自由文で送る（次節）。
+
+## 実行中の指示
+
+`codex-task` を**バックグラウンドで起動**し、実行中に `SendMessage` でメッセージを送る。
+
+```
+Agent(codex-task, "instruction=...", run_in_background: true)
+    ↓ ユーザーから追加の指示
+SendMessage(codex-task, "refresh token は触らず、cookie の SameSite 設定を先に疑って")
+    ↓
+subagent が原文のまま Codex へ turn/steer で投入する
+```
+
+フォアグラウンドで起動した場合、メインエージェントは subagent の完了までブロックされるため
+指示を渡せない。途中で指示を追加する可能性がある作業は必ずバックグラウンドで起動する。
+
+投入した指示を Codex が読むのは**次のツール実行の境界**である。
+長時間のコマンド（テスト実行など）が走っている最中に送っても、そのコマンドが終わるまでは反映されない。
+
+`steer` は指示を Codex へ投入できたかどうかが確定するまで戻らない。作業が既に終わっていた場合は
+投入されずに失敗を返し、subagent が呼び出し元にその旨を伝える。
+
+## 実行モデル
+
+```
+メインエージェント
+  │ Agent(codex-task, ..., run_in_background: true)
+  │      … SendMessage …
+  ▼
+codex-task subagent
+  │ 1. task-control.py start            → 作業を開始する
+  │ 2. task-control.py wait              を反復
+  │      ← スライスとスライスの間で SendMessage が届く
+  │ 3. task-control.py steer            届いたメッセージを Codex へ伝達
+  │ 4. wait がログパスを返したら終了
+  ▼
+task-supervisor.py（subagent の子プロセス）
+  ▼  JSON-RPC (stdio)
+codex app-server
+```
+
+`wait` は 60 秒のスライスで刻む。subagent はフォアグラウンドの Bash に入っている間
+メッセージを受け取れないため、スライスを長くすると指示を渡せない時間が延びる。
+
+supervisor は subagent の子プロセスであり、subagent の終了に伴って一緒に終了する。
+作業が終わった時点でログを書き出し、ワーカーを終了する。
 
 ## 親セッションへの応答
 
@@ -58,7 +107,7 @@ Codex が作業ディレクトリを変更している可能性があるため�
 | ヘッダー | 日時・モード（new / continuation）・ディレクトリ・セッション ID |
 | メッセージ | 送信した作業指示の原文 |
 | Codex の回答 | Codex からの作業報告（固定プロンプトで指定した形式） |
-| エラー情報 | エラー時のみ。exit code と stderr の内容 |
+| エラー情報 | エラー時のみ |
 
 ログファイル名のパターン：`<YYYYMMDD_HHMMSS_mmm>_<プロジェクト名>_codex-task.md`
 
@@ -71,28 +120,28 @@ Codex が作業ディレクトリを変更している可能性があるため�
 
 ## OpenAI Codex CLI 実行引数
 
-OpenAI Codex CLI は以下の固定引数で起動される。
+`codex app-server` を起動し、JSON-RPC で以下を送る。
 
-| オプション | 値 | 説明 |
-|---|---|---|
-| サブコマンド | `exec` | 実行モード（非対話。承認は求められない） |
-| `--skip-git-repo-check` | — | git リポジトリ外でも実行を許可 |
-| `--sandbox` | `workspace-write` | サンドボックス: ワークスペースへの書き込みを許可 |
-| `--json` | — | JSON 形式で出力 |
-| `-m` / `-c model_reasoning_effort=` | — | `CODEX_TASK_DEFAULT_MODEL` を指定した場合のみ付与 |
+| リクエスト | 指定 |
+|---|---|
+| `thread/start` | `cwd`（作業ディレクトリ）/ `sandbox: workspace-write` / `approvalPolicy: never` / `model` |
+| `turn/start` | `input`（作業指示）/ `effort` |
+| `turn/steer` | `threadId` / `expectedTurnId` / `input`（実行中の指示） |
 
-`session_id` を指定した場合は `exec` の後に `resume <session_id>` が付加される。
+`session_id` を指定した場合は `thread/start` の代わりに `thread/resume` を使う。
+
+`codex app-server` は Codex CLI 側で `[experimental]` と位置づけられている。
+プロトコルが変更された場合は `agents/_steer_codex.py` の追従が必要になる。
 
 ### 固定プロンプト（作業報告の形式指定）
 
 Codex の作業報告は形式が定まらないと呼び出し元に作業内容が正しく伝わらないため、`codex-review` と同様に固定プロンプトを作業指示の先頭に付加する。
-
-固定プロンプトは以下のセクション構成で報告するよう指示する。
+本体は `agents/codex-task-guidelines.txt` に外出ししている。
 
 | セクション | 内容 |
 |---|---|
 | 指示内容 | 今回の作業のために受けた指示内容 |
-| 作業結果 | 達成状況（完了 / 一部完了 / 未完了、達成した完了条件・達成できなかった完了条件）。指示外の作業を行った場合はその内容と理由 |
+| 作業結果 | 達成状況。指示外の作業を行った場合はその内容と理由 |
 | 成果物・変更内容 | 成果物を特定する情報（ファイルパス等）と概要、その他の変更対象と変更内容（差分そのものは貼らない） |
 | 作業中に発生した問題・課題 | 発生した問題（ファクトのみ）と、それに対する対応内容・対応理由 |
 | 補足 | その他依頼元に伝達すべき情報 |
@@ -101,11 +150,10 @@ Codex の作業報告は形式が定まらないと呼び出し元に作業内�
 
 ### 権限について
 
-`codex-ask` / `codex-review` が `--sandbox read-only` で書き込みを遮断しているのに対し、本 agent は `--sandbox workspace-write` を使い、**ワークスペースへの書き込みを承認なしに許可する**。
+`codex-ask` / `codex-review` が `--sandbox read-only` で書き込みを遮断しているのに対し、本 agent は `sandbox: workspace-write` を使い、**ワークスペースへの書き込みを承認なしに許可する**。
 
 codex のサンドボックスは OS レベルで強制されるため、`workspace-write` ではワークスペース外への書き込みは遮断される。
-
-`exec` は元々非対話で承認を求めないため、承認関連のオプションは指定していない。
+`approvalPolicy: never` により承認は求められない。
 
 ## モデルの指定
 
@@ -119,8 +167,6 @@ codex のサンドボックスは OS レベルで強制されるため、`worksp
 
 `model` と `effort` は独立に上書きされる。`model` だけを明示指定した場合、effort は環境変数由来の値（無ければ未指定）のままになる。
 
-agent は**ユーザーが明示的にモデルや effort を指定した場合のみ** `--model` / `--effort` を付与する。指定が無い場合は付与せず、環境変数または既定モデルが使われる（従来と同じ挙動）。
-
 環境変数 `CODEX_TASK_DEFAULT_MODEL` の書式は次のとおり。
 
 | 書式 | 例 | 動作 |
@@ -129,7 +175,7 @@ agent は**ユーザーが明示的にモデルや effort を指定した場合�
 | `<model>,<effort>` | `gpt-5,high` | モデルと reasoning effort を指定する |
 | 未設定 / 空文字列 | — | codex CLI 既定のモデルを使用する |
 
-呼び出し時の指定・環境変数のいずれで指定した値も、`codex` の `-m`（model）と `-c model_reasoning_effort=`（effort）にそのまま渡される。プラグイン側で値の妥当性は検証しないため、不正な値を指定した場合は codex 側がエラーを返し、その内容がログの「エラー情報」に記録される。
+プラグイン側で値の妥当性は検証しないため、不正な値を指定した場合は codex 側がエラーを返し、その内容がログの「エラー情報」に記録される。
 
 ## エラー処理
 
@@ -138,7 +184,8 @@ agent は**ユーザーが明示的にモデルや effort を指定した場合�
 | `instruction` が不足 | 引数不正メッセージを出力して終了 |
 | `codex` 未インストール | `'codex' コマンドが見つかりません` を出力して終了 |
 | Python 3.10+ が見つからない | `python-wrapper.sh` が固定メッセージで終了 |
-| Codex の実行エラー | エラー内容をログに含めてパスを返す（exit code 1） |
+| app-server の起動失敗 | `start` が失敗を返す。詳細は `start` の出力に含まれる |
+| 作業中の実行エラー | `wait` がエラー内容とログのパスを返す（exit code 1） |
 
 Codex の実行が途中で失敗した場合、**変更が中途半端な状態で残る可能性がある**。エラー時は `git status --short --untracked-files=all` で作業ディレクトリの状態を確認する。作業ディレクトリ外への副作用が疑われる場合はログの作業内容も確認する。
 
@@ -148,11 +195,11 @@ Codex の実行が途中で失敗した場合、**変更が中途半端な状態
 
 | ツール | 用途 |
 |---|---|
-| `codex` | OpenAI Codex CLI |
-| Python 3.10+ | パイプライン実行。`bin/python-wrapper.sh` が `${CLAUDE_PLUGIN_DATA}/venv` → `pyenv` → `conda` → `PATH` の順で解決する |
+| `codex` | OpenAI Codex CLI（`app-server` サブコマンドを使う） |
+| Python 3.10+ | 制御スクリプトの実行。`bin/python-wrapper.sh` が `${CLAUDE_PLUGIN_DATA}/venv` → `pyenv` → `conda` → `PATH` の順で解決する |
 
 ### python ライブラリ
 
 | ライブラリ | 用途 |
 |---|---|
-| `filelock`（`requirements.txt`） | 起動時に `bin/python-wrapper.sh` が自動インストールする |
+| `filelock`（`requirements.txt`） | `ask-pipeline.py`（`codex-ask` / `codex-review`）が使う。起動時に `bin/python-wrapper.sh` が自動インストールする |

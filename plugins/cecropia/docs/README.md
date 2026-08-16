@@ -48,7 +48,7 @@ claude plugin install cecropia@claude-forest
 |---------|------|
 | `claude-ask` | 別セッションの Claude と会話する |
 | `claude-review` | 別セッションの Claude でコードレビューを行う |
-| `claude-task` | 別セッションの Claude にファイル書き込みを含む作業を依頼する |
+| `claude-task` | 別セッションの Claude にファイル書き込みを含む作業を依頼する。実行中に軌道修正の指示を差し込める |
 | `claude-pairing` | 現在の Claude セッションを別セッションの Claude に 1:1 でペアリングする |
 | `get-pr-info` | GitHub PR の情報を取得する |
 | `plant-uml` | PlantUML ソースコードと 画像(Kroki URL) の相互変換、ソースコードテキスト・Markdownのコードスニペットに対応 |

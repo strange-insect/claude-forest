@@ -43,6 +43,6 @@ claude plugin install aphid@claude-forest
 |---------|------|
 | `codex-ask` | OpenAI Codex CLI で Codex と会話する |
 | `codex-review` | OpenAI Codex CLI で Codex でコードレビューを行う |
-| `codex-task` | OpenAI Codex CLI で Codex にファイル書き込みを含む作業を依頼する |
+| `codex-task` | OpenAI Codex CLI で Codex にファイル書き込みを含む作業を依頼する。実行中に軌道修正の指示を差し込める |
 | `codex-pairing` | 現在の Claude セッションを Codex セッションに 1:1 でペアリングする |
 | `codex-export-session` | codex のセッション会話全文を Markdown ファイルにエクスポートする |

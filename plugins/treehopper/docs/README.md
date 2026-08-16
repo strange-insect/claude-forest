@@ -43,6 +43,6 @@ claude plugin install treehopper@claude-forest
 |---------|------|
 | `opencode-ask` | opencode CLI で opencode と会話する |
 | `opencode-review` | opencode CLI で opencode にコードレビューを依頼する |
-| `opencode-task` | opencode CLI で opencode にファイル書き込みを含む作業を依頼する |
+| `opencode-task` | opencode CLI で opencode にファイル書き込みを含む作業を依頼する。実行中に軌道修正の指示を差し込める |
 | `opencode-pairing` | 現在の Claude セッションを opencode セッションに 1:1 でペアリングする |
 | `opencode-export-session` | opencode のセッション会話全文を Markdown ファイルにエクスポートする |
