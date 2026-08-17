@@ -1,6 +1,6 @@
 # hooks
 
-4 つのフックを提供する。agent や skill が正しく動作するための基盤と、Bash 実行環境の整備を行う。
+5 つのフックを提供する。agent や skill が正しく動作するための基盤と、Bash 実行環境の整備を行う。
 
 ## 一覧
 
@@ -8,6 +8,7 @@
 |---|---|---|
 | `SessionStart` | セッション開始時 | `CLAUDE_SESSION_ID` を環境変数として後続プロセスに継承させる |
 | `SessionStart`（direnv） | セッション開始時 | `.envrc` を direnv で評価し、得られた環境変数を後続の Bash 実行に継承させる |
+| `SessionStart`（development-guidelines） | セッション開始時 | 開発ガイドラインを `additionalContext` としてセッションに注入する |
 | `SubagentStart` | subagent 起動時 | `CLAUDE_PLUGIN_ROOT` / `CLAUDE_PLUGIN_DATA` を additionalContext 経由で subagent に伝える |
 | `PreToolUse` | Agent ツール呼び出し前 | ペアリング済みの場合、指定外のセッション ID での `claude-ask` / `claude-review` 呼び出しをブロックする |
 
@@ -43,6 +44,20 @@
 セッション開始時に 1 回だけ評価する。セッション中に `.envrc` を変更した場合や、別の `.envrc` を持つディレクトリへ移動した場合は反映されない。反映するにはセッションを開始し直す。
 
 direnv 連携は Linux / macOS での利用を想定している。Windows（Git Bash）では未検証である。direnv が PATH に無い環境では何もせず終了するため、未インストールでもセッションの動作に影響はない。
+
+## SessionStart（development-guidelines）
+
+セッション開始時に `agents/development-guidelines.txt` を `additionalContext` としてセッションに注入する。実装・修正時に開発ガイドラインを適用するための機能である。
+
+開発ガイドラインはソースコード、ソースコード上のコメント、ドキュメント、全体構成の各区分を持ち、遵守事項を示す形式で記述する。
+
+### 無効化
+
+環境変数 `CECROPIA_DISABLE_DEVELOPMENT_GUIDELINES` に空文字以外を設定すると、何も出力せず終了する。
+
+### 適用範囲
+
+このフックは cecropia が提供する。
 
 ## SubagentStart
 
