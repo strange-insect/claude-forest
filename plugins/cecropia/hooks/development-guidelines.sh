@@ -3,12 +3,12 @@
 # SessionStart フック
 # 開発ガイドラインを additionalContext としてセッションに注入する。
 #
-# 環境変数 CECROPIA_DISABLE_DEVELOPMENT_GUIDELINES に空文字以外を設定した場合は注入しない。
+# 環境変数 CLAUDEFOREST_DISABLE_DEVELOPMENT_GUIDELINES に空文字以外を設定した場合は注入しない。
 
 # stdin の hook payload を読み捨てない場合、呼び出し元が SIGPIPE により異常終了する可能性がある
 cat >/dev/null
 
-[[ -z "${CECROPIA_DISABLE_DEVELOPMENT_GUIDELINES:-}" ]] || exit 0
+[[ -z "${CLAUDEFOREST_DISABLE_DEVELOPMENT_GUIDELINES:-}" ]] || exit 0
 
 GUIDELINES="$(cat "${CLAUDE_PLUGIN_ROOT}/agents/development-guidelines.txt" 2>/dev/null)"
 

@@ -121,9 +121,13 @@ skill の `context: fork` は現時点では記憶（メッセージ履歴）を
 
 ## 共通モジュールはプラグイン間で同一内容とする
 
-複数プラグインが同名で持つモジュール（`bin/python-wrapper.sh` / `bin/ask-pipeline.py` / `bin/save-ask-log.py` / `bin/_ask_log.py` / `bin/_runtime_check.py` / `bin/task-control.py` / `bin/task-supervisor.py` / `bin/_task_run_store.py` / `agents/_ask_common.py` / `hooks/session-start.sh` / `hooks/subagent-start.sh`）と、CLI ごとに名前が異なるレビュー観点定義（`agents/*-review-guidelines.txt`）・作業報告形式の定義（`agents/*-task-guidelines.txt`）は、全プラグインで同一内容とする。
+複数プラグインが同名で持つモジュール（`bin/python-wrapper.sh` / `bin/ask-pipeline.py` / `bin/save-ask-log.py` / `bin/_ask_log.py` / `bin/_runtime_check.py` / `bin/task-control.py` / `bin/task-supervisor.py` / `bin/_task_run_store.py` / `agents/_ask_common.py` / `agents/development-guidelines.txt` / `hooks/session-start.sh` / `hooks/subagent-start.sh`）と、CLI ごとに名前が異なるレビュー観点定義（`agents/*-review-guidelines.txt`）・作業報告形式の定義（`agents/*-task-guidelines.txt`）は、全プラグインで同一内容とする。
 
 CLI 固有の差異は steering backend（`agents/_steer_<cli>.py`）に閉じ込める。
 
 これらは汎用的な機能として設計し、プラグイン固有の機能や設定をこれらのモジュールに持ち込まない。
 固有の変更が必要になる場合、設計が間違っているので共通部品と固有機能の分割設計を見直す。
+
+## レビュー観点と開発ガイドラインは同じ指針を示す
+
+レビュー観点定義（`agents/*-review-guidelines.txt`）と開発ガイドライン（`agents/development-guidelines.txt`）は、同じ指針をレビュー時と実装時のそれぞれに適用するための文書である。一方を変更した場合はもう一方にも反映し、示す指針が食い違わないよう同期する。

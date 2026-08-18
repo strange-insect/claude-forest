@@ -46,6 +46,14 @@ START_TIMEOUT_SECONDS = 120.0
 
 PROMPT_PREFIX = "依頼された作業を実施してください。\n\n"
 
+DEVELOPMENT_GUIDELINES_REFERENCE = (
+    "### 開発ガイドライン\n\n"
+    "作業を開始する前に次のファイルを読み、記載された内容に従って作業すること。\n"
+    "{path}\n\n"
+)
+
+DEVELOPMENT_GUIDELINES_DISABLE_VAR = "CLAUDEFOREST_DISABLE_DEVELOPMENT_GUIDELINES"
+
 
 def die(msg: str, code: int = 1) -> None:
     print(f"ERROR: {msg}", file=sys.stderr)
@@ -71,6 +79,7 @@ def _build_initial_prompt(plugin_root: Path, agent: str, message: str,
     """初回（session_id 無し）は必ず、継続時は明示指定時のみ固定プロンプトを付加する。
 
     固定プロンプト本体（作業報告の形式指定）は `<cli>-task-guidelines.txt` に外出ししている。
+    開発ガイドラインは本文を埋め込まず、`development-guidelines.txt` のパスを参照させる。
     """
     if session_id and not inject_fixed_prompt:
         return message
@@ -80,7 +89,19 @@ def _build_initial_prompt(plugin_root: Path, agent: str, message: str,
         guidelines = path.read_text(encoding="utf-8")
     except (OSError, UnicodeError) as exc:
         die(f"固定プロンプトの読み込みに失敗しました: {path} ({exc})")
-    return PROMPT_PREFIX + guidelines + "\n【依頼内容】\n" + message
+    reference = _development_guidelines_reference(plugin_root)
+    return PROMPT_PREFIX + reference + guidelines + "\n【依頼内容】\n" + message
+
+
+def _development_guidelines_reference(plugin_root: Path) -> str:
+    """開発ガイドラインの参照指示を返す。無効化されている場合は空文字を返す。"""
+    if os.environ.get(DEVELOPMENT_GUIDELINES_DISABLE_VAR, ""):
+        return ""
+    # Windows native Python 対応:
+    #   str(Path) の C:\... backslash 形式は Git Bash の POSIX util が扱えないため、
+    #   as_posix() で C:/... 形式に揃える
+    path = (plugin_root / "agents" / "development-guidelines.txt").resolve()
+    return DEVELOPMENT_GUIDELINES_REFERENCE.format(path=path.as_posix())
 
 
 def _print_outcome(run_id: str, status: dict) -> int:

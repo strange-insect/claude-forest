@@ -49,11 +49,11 @@ direnv 連携は Linux / macOS での利用を想定している。Windows（Git
 
 セッション開始時に `agents/development-guidelines.txt` を `additionalContext` としてセッションに注入する。実装・修正時に開発ガイドラインを適用するための機能である。
 
-開発ガイドラインはソースコード、ソースコード上のコメント、ドキュメント、全体構成の各区分を持ち、遵守事項を示す形式で記述する。
+開発ガイドラインはソースコード、ソースコード上のコメント、ドキュメント、全体構成、AIエージェントによる不正行為の各区分を持ち、遵守事項を示す形式で記述する。
 
 ### 無効化
 
-環境変数 `CECROPIA_DISABLE_DEVELOPMENT_GUIDELINES` に空文字以外を設定すると、何も出力せず終了する。
+環境変数 `CLAUDEFOREST_DISABLE_DEVELOPMENT_GUIDELINES` に空文字以外を設定すると、何も出力せず終了する。
 
 ### 適用範囲
 
