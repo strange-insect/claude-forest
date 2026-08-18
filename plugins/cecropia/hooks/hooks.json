@@ -19,6 +19,15 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/development-guidelines.sh\"",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "SubagentStart": [

@@ -34,6 +34,7 @@ claude plugin install aphid@claude-forest
 | `CODEX_ASK_DEFAULT_MODEL` | `codex-ask` | 使用するモデル。`<model>` または `<model>,<effort>` 形式（区切りはカンマ）。未設定または空文字列の場合は既定モデルを使用する |
 | `CODEX_REVIEW_DEFAULT_MODEL` | `codex-review` | 同上 |
 | `CODEX_TASK_DEFAULT_MODEL` | `codex-task` | 同上 |
+| `CLAUDEFOREST_DISABLE_DEVELOPMENT_GUIDELINES` | `codex-task` | 空文字以外を設定すると開発ガイドラインの参照指示を付加しない |
 
 ※ 各 agent の呼び出し時に `model=` / `effort=` を指定した場合はそちらが優先される（ユーザーが明示的に指定した場合のみ使用される）
 
@@ -43,6 +44,6 @@ claude plugin install aphid@claude-forest
 |---------|------|
 | `codex-ask` | OpenAI Codex CLI で Codex と会話する |
 | `codex-review` | OpenAI Codex CLI で Codex でコードレビューを行う |
-| `codex-task` | OpenAI Codex CLI で Codex にファイル書き込みを含む作業を依頼する |
+| `codex-task` | OpenAI Codex CLI で Codex にファイル書き込みを含む作業を依頼する。実行中に軌道修正の指示を差し込める |
 | `codex-pairing` | 現在の Claude セッションを Codex セッションに 1:1 でペアリングする |
 | `codex-export-session` | codex のセッション会話全文を Markdown ファイルにエクスポートする |
