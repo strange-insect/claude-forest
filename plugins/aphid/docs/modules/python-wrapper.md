@@ -49,7 +49,10 @@ fast path に当てはまらない場合に実行する。`APHID_PYTHON` が設�
 venv / conda 環境が有効でないと判定された場合は自動再作成しない。
 
 ※ **「有効」の判定条件**
-- `APHID_CONDA_ENV`：変数が非空 かつ `conda` が PATH 上にある かつ その環境で Python 3.10 以上が動作する
+- `APHID_CONDA_ENV`：
+    - 変数が非空 かつ `conda` が PATH 上にある
+    - 環境名に対応する conda prefix と、その配下の Python 実行ファイルを特定できる
+    - Python 3.10 以上で、`sys.prefix` と `sys.executable` が特定した環境と一致する
 - `APHID_PYTHON`：
     - 実行ファイルとして存在する
     - Python 3.10 以上 かつ `venv` モジュールが利用可能
@@ -60,19 +63,25 @@ venv / conda 環境が有効でないと判定された場合は自動再作成�
 | モード | 実行方法 |
 |---|---|
 | venv モード | `APHID_PYTHON` の値で `exec <python> <args>` |
-| conda モード | `exec conda run --no-capture-output -n <env> python <args>` |
+| conda モード | `exec conda run --no-capture-output -p <prefix> <absolute-python> <args>` |
 
 ## 依存パッケージのインストール
 
-exec 直前に `${CLAUDE_PLUGIN_ROOT}/requirements.txt` の内容を `${CLAUDE_PLUGIN_DATA}/requirements.txt`（インストール済みスナップショット）と比較し、差異があれば `pip install -r requirements.txt` を実行してスナップショットを更新する。
+exec 直前に requirements 本文と使用する interpreter の識別情報を比較し、依存パッケージのインストール成功時に以下へ記録する。
+
+| ファイル | 内容 |
+|---|---|
+| `${CLAUDE_PLUGIN_DATA}/requirements.txt` | `${CLAUDE_PLUGIN_ROOT}/requirements.txt` の内容 |
+| `${CLAUDE_PLUGIN_DATA}/requirements.interpreter.json` | `sys.executable`、`sys.prefix`、Python バージョン、実行ファイル情報 |
 
 | 状態 | 動作 |
 |---|---|
 | `requirements.txt` が存在しない | 何もしない |
-| スナップショットと内容が一致 | skip（毎回のオーバーヘッドなし） |
-| スナップショットと内容が異なる（初回・更新時） | pip install → スナップショット上書き |
+| requirements 本文と interpreter の識別情報が一致 | インストールを省略 |
+| いずれかが一致しない | 選択済み interpreter で `pip install -r requirements.txt` を実行して記録を更新 |
+| `pip install` が失敗 | `ERROR` を stderr に出力して異常終了 |
 
-※ pip install が失敗した場合は `WARN` を stderr に出力して処理を続行する（ソフトフェイル）。
+依存パッケージのインストールに成功した場合だけ記録を更新する。インストールに失敗した場合、指定された Python 処理は開始しない。
 
 ## 環境変数
 
@@ -87,3 +96,4 @@ exec 直前に `${CLAUDE_PLUGIN_ROOT}/requirements.txt` の内容を `${CLAUDE_P
 |---|---|
 | 有効な Python が PATH 上に見つからない | `Python runtime for this plugin could not be prepared. Install pyenv, conda, python3, or python and make it available on PATH.` |
 | 環境作成に失敗した | `Python runtime for this plugin could not be prepared. Failed to create the plugin Python environment.` |
+| 必須依存パッケージのインストールに失敗した | `ERROR: Required Python dependencies for this plugin could not be installed. The requested Python process was not started.` |

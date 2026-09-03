@@ -29,7 +29,7 @@
 #
 # 実行モードは venv と conda の 2 種:
 #   - venv モード: ${CLAUDE_PLUGIN_DATA}/venv の Python で exec
-#   - conda モード: conda run --no-capture-output -n <env-name> python で exec
+#   - conda モード: conda run --no-capture-output -p <prefix> <absolute-python> で exec
 #     (--no-capture-output が無いと conda 側で stdin/stdout/stderr が捕捉され、
 #      heredoc などで渡した stdin が子プロセスに届かない — conda/conda#9412 系)
 
@@ -44,6 +44,10 @@ _PW_PYTHON_TARGET_VERSION="3.12"
 # Plugin 固有の値 (conda 環境名 / キャッシュ用の環境変数名)
 . "${CLAUDE_PLUGIN_ROOT}/bin/plugin.env"
 
+# 検証済み conda 環境の内部状態
+_PW_CONDA_PREFIX=""
+_PW_CONDA_PYTHON=""
+
 # §2.7 固定メッセージ（plugin ごとに考えさせず指定文言に固定する）
 _pw_print_no_runtime() {
   cat >&2 <<'MSG'
@@ -56,6 +60,13 @@ _pw_print_setup_failed() {
   cat >&2 <<'MSG'
 Python runtime for this plugin could not be prepared.
 Failed to create the plugin Python environment.
+MSG
+}
+
+_pw_print_requirements_failed() {
+  cat >&2 <<'MSG'
+ERROR: Required Python dependencies for this plugin could not be installed.
+The requested Python process was not started.
 MSG
 }
 
@@ -104,21 +115,68 @@ _pw_validate_python() {
   "$candidate" "${CLAUDE_PLUGIN_ROOT}/bin/_runtime_check.py" "${runtime_args[@]}" >/dev/null 2>&1
 }
 
+# conda のユーザー設定に依存しない形式で環境一覧を取得する。
+_pw_list_conda_envs() {
+  CONDA_JSON=false conda env list --console=classic 2>/dev/null \
+    || CONDA_JSON=false conda env list 2>/dev/null
+}
+
+# conda env list から環境名に対応する prefix を取得する。
+_pw_find_conda_prefix() {
+  local env_name="$1" line listed_name prefix
+  while IFS= read -r line; do
+    [[ -z "${line}" || "${line}" == \#* ]] && continue
+    listed_name="${line%%[[:space:]]*}"
+    [[ "${listed_name}" == "${env_name}" ]] || continue
+
+    prefix="${line#"${listed_name}"}"
+    prefix="${prefix#"${prefix%%[![:space:]]*}"}"
+    if [[ "${prefix}" == \** ]]; then
+      prefix="${prefix#\*}"
+      prefix="${prefix#"${prefix%%[![:space:]]*}"}"
+    fi
+    prefix="${prefix%"${prefix##*[![:space:]]}"}"
+    [[ -n "${prefix}" ]] || return 1
+    printf '%s' "${prefix}"
+    return 0
+  done < <(_pw_list_conda_envs)
+  return 1
+}
+
 # conda 環境の検証
 # conda run の exit code は信頼できない場合がある (conda/conda#9599) ため
-# sentinel 出力のみで判定する。
+# sentinel 出力と interpreter の所属環境で判定する。
 _pw_validate_conda_env() {
-  local env_name="$1" out
-  out="$(conda run -n "${env_name}" python -c \
-    'import sys; sys.stdout.write("__plugin_python_ok__" if sys.version_info >= (3, 10) else "")' \
-    2>/dev/null)" || true
-  [[ "${out%$'\r'}" == "__plugin_python_ok__" ]]
+  local env_name="$1" prefix candidate out
+  _PW_CONDA_PREFIX=""
+  _PW_CONDA_PYTHON=""
+
+  prefix="$(_pw_find_conda_prefix "${env_name}")" || return 1
+  for candidate in "${prefix}/bin/python" "${prefix}/python.exe"; do
+    out="$(conda run --no-capture-output -p "${prefix}" "${candidate}" -c '
+import os
+import sys
+
+normalize = lambda value: os.path.normcase(os.path.realpath(os.path.abspath(value)))
+valid = (
+    sys.version_info >= (3, 10)
+    and normalize(sys.prefix) == normalize(sys.argv[1])
+    and normalize(sys.executable) == normalize(sys.argv[2])
+)
+sys.stdout.write("__plugin_python_ok__" if valid else "")
+' "${prefix}" "${candidate}" 2>/dev/null)" || true
+    if [[ "${out%$'\r'}" == "__plugin_python_ok__" ]]; then
+      _PW_CONDA_PREFIX="${prefix}"
+      _PW_CONDA_PYTHON="${candidate}"
+      return 0
+    fi
+  done
+  return 1
 }
 
 # conda 環境の存在確認
 _pw_conda_env_exists() {
-  local env_name="$1"
-  conda env list 2>/dev/null | grep -q "^${env_name}[[:space:]]"
+  _pw_find_conda_prefix "$1" >/dev/null
 }
 
 # venv レイアウト (POSIX → Windows) から Python 実行ファイルを探す
@@ -176,6 +234,15 @@ _pw_pyenv_find_python() {
     fi
   done
   return 1
+}
+
+# requirements のインストール済み記録を削除する。
+_pw_clear_requirements_cache() {
+  [[ -z "${CLAUDE_PLUGIN_DATA:-}" ]] && return 0
+  rm -f \
+    "${CLAUDE_PLUGIN_DATA}/requirements.txt" \
+    "${CLAUDE_PLUGIN_DATA}/requirements.interpreter.json" \
+    2>/dev/null || true
 }
 
 # <PLUGIN>_PYTHON / <PLUGIN>_CONDA_ENV の確定
@@ -236,7 +303,7 @@ MSG
     if base="$(_pw_pyenv_find_python)"; then
       found_any_base=true
       rm -rf "${venv_root}" 2>/dev/null || true
-      rm -f "${CLAUDE_PLUGIN_DATA}/requirements.txt" 2>/dev/null || true
+      _pw_clear_requirements_cache
       if "${base}" -m venv "${venv_root}" >/dev/null 2>&1; then
         if candidate="$(_pw_locate_venv_python "${venv_root}")"; then
           if _pw_validate_python "${candidate}"; then
@@ -254,7 +321,7 @@ MSG
   if command -v conda >/dev/null 2>&1; then
     found_any_base=true
     rm -rf "${venv_root}" 2>/dev/null || true
-    rm -f "${CLAUDE_PLUGIN_DATA}/requirements.txt" 2>/dev/null || true
+    _pw_clear_requirements_cache
     if conda create -y -q -n "${_PW_CONDA_ENV_NAME}" "python=${_PW_PYTHON_TARGET_VERSION}" >/dev/null 2>&1; then
       if _pw_validate_conda_env "${_PW_CONDA_ENV_NAME}"; then
         printf -v "${_PW_CONDA_ENV_VAR}" '%s' "${_PW_CONDA_ENV_NAME}"
@@ -272,7 +339,7 @@ MSG
     if _pw_validate_python "${base}" base; then
       found_any_base=true
       rm -rf "${venv_root}" 2>/dev/null || true
-      rm -f "${CLAUDE_PLUGIN_DATA}/requirements.txt" 2>/dev/null || true
+      _pw_clear_requirements_cache
       if "${base}" -m venv "${venv_root}" >/dev/null 2>&1; then
         if candidate="$(_pw_locate_venv_python "${venv_root}")"; then
           if _pw_validate_python "${candidate}"; then
@@ -293,42 +360,107 @@ MSG
   return 1
 }
 
-# plugin requirements のインストール (requirements.txt が存在する場合のみ)
-# ${CLAUDE_PLUGIN_DATA}/requirements.txt をインストール済み状態のスナップショットとして使う。
-# プラグインの requirements.txt と内容が一致すれば skip、異なれば pip install して上書きコピーする。
-_pw_install_requirements() {
-  local req_file="${CLAUDE_PLUGIN_ROOT}/requirements.txt"
-  [[ -f "${req_file}" ]] || return 0
-  [[ -z "${CLAUDE_PLUGIN_DATA:-}" ]] && return 0
-
-  local installed_req="${CLAUDE_PLUGIN_DATA}/requirements.txt"
-  cmp -s "${req_file}" "${installed_req}" && return 0
+# 選択済み interpreter の識別情報を取得する。
+_pw_get_interpreter_identity() {
+  local code out
+  code='import json, os, sys
+executable = os.path.normcase(os.path.realpath(os.path.abspath(sys.executable)))
+prefix = os.path.normcase(os.path.realpath(os.path.abspath(sys.prefix)))
+stat = os.stat(executable)
+identity = {
+    "executable": executable,
+    "prefix": prefix,
+    "stat": [stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns],
+    "version": list(sys.version_info[:3]),
+}
+sys.stdout.write(json.dumps(identity, sort_keys=True, separators=(",", ":")))'
 
   if [[ -n "${!_PW_CONDA_ENV_VAR:-}" ]]; then
-    conda run -n "${!_PW_CONDA_ENV_VAR}" python -m pip install \
-      -r "${req_file}" -q >/dev/null 2>&1 \
-      || { printf 'WARN: pip install failed; some features may be unavailable\n' >&2; return 0; }
+    [[ -n "${_PW_CONDA_PREFIX}" && -n "${_PW_CONDA_PYTHON}" ]] || return 1
+    out="$(conda run --no-capture-output -p "${_PW_CONDA_PREFIX}" "${_PW_CONDA_PYTHON}" -c "${code}" 2>/dev/null)" || return 1
   elif [[ -n "${!_PW_PYTHON_VAR:-}" ]]; then
-    "${!_PW_PYTHON_VAR}" -m pip install \
-      -r "${req_file}" -q >/dev/null 2>&1 \
-      || { printf 'WARN: pip install failed; some features may be unavailable\n' >&2; return 0; }
+    out="$("${!_PW_PYTHON_VAR}" -c "${code}" 2>/dev/null)" || return 1
   else
-    return 0
+    return 1
   fi
 
-  cp "${req_file}" "${installed_req}"
+  [[ -n "${out}" ]] || return 1
+  printf '%s' "${out%$'\r'}"
+}
+
+# plugin requirements のインストール (requirements.txt が存在する場合のみ)
+# requirements 本文と interpreter identity が一致する場合だけインストールを省略する。
+_pw_install_requirements() {
+  local req_file="${CLAUDE_PLUGIN_ROOT}/requirements.txt"
+  local installed_req installed_identity identity="" pip_out
+  [[ -f "${req_file}" ]] || return 0
+
+  if [[ -n "${CLAUDE_PLUGIN_DATA:-}" ]]; then
+    installed_req="${CLAUDE_PLUGIN_DATA}/requirements.txt"
+    installed_identity="${CLAUDE_PLUGIN_DATA}/requirements.interpreter.json"
+    identity="$(_pw_get_interpreter_identity)" || {
+      _pw_print_requirements_failed
+      return 1
+    }
+    if cmp -s "${req_file}" "${installed_req}" \
+       && [[ -f "${installed_identity}" ]] \
+       && [[ "$(<"${installed_identity}")" == "${identity}" ]]; then
+      return 0
+    fi
+  fi
+
+  if [[ -n "${!_PW_CONDA_ENV_VAR:-}" ]]; then
+    [[ -n "${_PW_CONDA_PREFIX}" && -n "${_PW_CONDA_PYTHON}" ]] || {
+      _pw_print_requirements_failed
+      return 1
+    }
+    pip_out="$(conda run --no-capture-output -p "${_PW_CONDA_PREFIX}" "${_PW_CONDA_PYTHON}" -c '
+import subprocess
+import sys
+
+result = subprocess.run(
+    [sys.executable, "-m", "pip", "install", "-r", sys.argv[1], "-q", "--disable-pip-version-check"],
+    stdout=subprocess.DEVNULL,
+)
+sys.stdout.write("__plugin_pip_ok__" if result.returncode == 0 else "")
+raise SystemExit(result.returncode)
+' "${req_file}")" || true
+    if [[ "${pip_out%$'\r'}" != "__plugin_pip_ok__" ]]; then
+      _pw_print_requirements_failed
+      return 1
+    fi
+  elif [[ -n "${!_PW_PYTHON_VAR:-}" ]]; then
+    if ! "${!_PW_PYTHON_VAR}" -m pip install -r "${req_file}" -q --disable-pip-version-check >/dev/null; then
+      _pw_print_requirements_failed
+      return 1
+    fi
+  else
+    _pw_print_requirements_failed
+    return 1
+  fi
+
+  [[ -n "${CLAUDE_PLUGIN_DATA:-}" ]] || return 0
+  if ! cp "${req_file}" "${installed_req}" \
+     || ! printf '%s\n' "${identity}" >"${installed_identity}"; then
+    printf 'ERROR: Failed to record installed Python dependencies.\n' >&2
+    return 1
+  fi
 }
 
 # Fast paths: 既に確定済みの環境が valid なら再利用する。
 # 子プロセスへの export で連続呼び出しでは 1 回目以降 resolve が走らない。
 if [[ -n "${!_PW_CONDA_ENV_VAR:-}" ]] && command -v conda >/dev/null 2>&1 \
    && _pw_validate_conda_env "${!_PW_CONDA_ENV_VAR}"; then
-  _pw_install_requirements
+  if ! _pw_install_requirements; then
+    exit 1
+  fi
   _pw_normalize_env_for_windows
-  exec conda run --no-capture-output -n "${!_PW_CONDA_ENV_VAR}" python "$@"
+  exec conda run --no-capture-output -p "${_PW_CONDA_PREFIX}" "${_PW_CONDA_PYTHON}" "$@"
 fi
 if [[ -n "${!_PW_PYTHON_VAR:-}" ]] && _pw_validate_python "${!_PW_PYTHON_VAR}"; then
-  _pw_install_requirements
+  if ! _pw_install_requirements; then
+    exit 1
+  fi
   _pw_normalize_env_for_windows
   exec "${!_PW_PYTHON_VAR}" "$@"
 fi
@@ -341,13 +473,17 @@ fi
 if [[ -n "${!_PW_CONDA_ENV_VAR:-}" ]]; then
   export "${_PW_CONDA_ENV_VAR}"
   unset "${_PW_PYTHON_VAR}"
-  _pw_install_requirements
+  if ! _pw_install_requirements; then
+    exit 1
+  fi
   _pw_normalize_env_for_windows
-  exec conda run --no-capture-output -n "${!_PW_CONDA_ENV_VAR}" python "$@"
+  exec conda run --no-capture-output -p "${_PW_CONDA_PREFIX}" "${_PW_CONDA_PYTHON}" "$@"
 fi
 
 export "${_PW_PYTHON_VAR}"
 unset "${_PW_CONDA_ENV_VAR}"
-_pw_install_requirements
+if ! _pw_install_requirements; then
+  exit 1
+fi
 _pw_normalize_env_for_windows
 exec "${!_PW_PYTHON_VAR}" "$@"
