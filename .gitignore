@@ -1,5 +1,6 @@
 # ローカル設定
 .claude/
+.envrc
 
 # Python
 __pycache__/
