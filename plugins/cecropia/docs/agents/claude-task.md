@@ -134,6 +134,8 @@ Claude Code CLI は以下の固定引数で起動され、stdin を開いたま�
 stdin へ `{"type":"user","message":{...}}` を書くことで、初回の作業指示と実行中の指示の
 どちらも投入する。stdout の `result` の到着が作業の完了を表す。
 
+環境変数 `CLAUDEFOREST_DISABLE_AUTO_CONTINUE=1` を設定して起動する。
+
 ### 固定プロンプト（開発ガイドラインの参照指示・作業報告の形式指定）
 
 Claude の作業報告は形式が定まらないと呼び出し元に作業内容が正しく伝わらないため、`claude-review` と同様に固定プロンプトを作業指示の先頭に付加する。
