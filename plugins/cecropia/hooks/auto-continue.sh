@@ -7,5 +7,13 @@
 #
 # stdin : Claude Code が渡す Stop フックの payload JSON
 # stdout: {"decision":"block","reason":"..."} (続行させる場合のみ)
+#
+# 環境変数 CLAUDEFOREST_DISABLE_AUTO_CONTINUE に空文字以外を設定した場合は判定せず終了する。
+
+if [[ -n "${CLAUDEFOREST_DISABLE_AUTO_CONTINUE:-}" ]]; then
+  # stdin の hook payload を読み捨てない場合、呼び出し元が SIGPIPE により異常終了する可能性がある
+  cat >/dev/null
+  exit 0
+fi
 
 exec "${CLAUDE_PLUGIN_ROOT}/bin/python-wrapper.sh" "${CLAUDE_PLUGIN_ROOT}/bin/auto-continue.py"

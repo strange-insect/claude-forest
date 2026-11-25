@@ -53,6 +53,7 @@ model: sonnet
 ```bash
 export CLAUDE_PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT}"
 export CLAUDE_PLUGIN_DATA="${CLAUDE_PLUGIN_DATA}"
+export CLAUDEFOREST_DISABLE_AUTO_CONTINUE=1
 "${CLAUDE_PLUGIN_ROOT}/bin/python-wrapper.sh" "${CLAUDE_PLUGIN_ROOT}/bin/ask-pipeline.py" \
   --agent claude-ask \
   --lock-prefix claude \

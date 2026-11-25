@@ -89,6 +89,8 @@
 
 `session_id` を指定した場合は `--resume <session_id>` が付加される。
 
+環境変数 `CLAUDEFOREST_DISABLE_AUTO_CONTINUE=1` を設定して起動する。
+
 ## モデルの指定
 
 使用するモデルと reasoning effort は、呼び出し時の `model=` / `effort=` 指定と環境変数 `CLAUDE_ASK_DEFAULT_MODEL` の 2 通りで指定できる。

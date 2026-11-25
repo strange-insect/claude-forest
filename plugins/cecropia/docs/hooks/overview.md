@@ -11,7 +11,7 @@
 | `SessionStart`（development-guidelines） | セッション開始時 | 開発ガイドラインを `additionalContext` としてセッションに注入する |
 | `SubagentStart` | subagent 起動時 | `CLAUDE_PLUGIN_ROOT` / `CLAUDE_PLUGIN_DATA` を additionalContext 経由で subagent に伝える |
 | `PreToolUse` | Agent ツール呼び出し前 | ペアリング済みの場合、指定外のセッション ID での `claude-ask` / `claude-review` 呼び出しをブロックする |
-| `Stop` | エージェントの応答終了時 | 作業宣言・続行確認だけで停止した場合に、停止をブロックして処理を続行させる |
+| `Stop` | エージェントの応答終了時 | 停止すべきでないときに停止しようとした場合、停止をブロックして処理を続行させる |
 
 ## SessionStart
 
@@ -126,11 +126,17 @@ task-notification は `user` メッセージの本文文字列、または attac
 
 停止した subagent は `SendMessage` によって再開されるため、起動・再開・完了は時系列の状態遷移として処理する。
 
+transcript のうち JSON として解釈できない行（NUL バイトのみの行、途中で途切れた行など）は読み飛ばす。
+
 ### 判定の委譲
 
 判定は `claude -p --safe-mode --model haiku --max-turns 1` を別プロセスとして起動して行う。`--safe-mode` は子プロセス側のプラグインとフックを無効化するため、このフック自身が再帰的に起動することはない。
 
 `claude` が PATH に無い場合、および判定結果が `continue` を含まない、または `continue` と `stop` の両方を含む場合は何も出力せず、エージェントはそのまま停止する。
+
+### 無効化
+
+環境変数 `CLAUDEFOREST_DISABLE_AUTO_CONTINUE` に空文字以外を設定すると、判定を行わず何も出力せず終了する。
 
 ### 制約
 

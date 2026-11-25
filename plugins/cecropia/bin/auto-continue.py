@@ -60,12 +60,17 @@ _ASYNC_LAUNCHED = "async_launched"
 
 
 def iter_records(transcript: Path) -> Iterator[dict]:
-    """transcript (JSONL) のレコードを記録順に返す。"""
-    with transcript.open(encoding="utf-8") as fp:
+    """transcript (JSONL) のレコードを記録順に返す。JSON として解釈できない行は読み飛ばす。"""
+    with transcript.open(encoding="utf-8", errors="replace") as fp:
         for line in fp:
             line = line.strip()
-            if line:
-                yield json.loads(line)
+            if not line:
+                continue
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            yield record
 
 
 def notified_tool_use_id(text: str) -> str:
@@ -159,7 +164,7 @@ def judge(message: str) -> str:
 
 
 def main() -> int:
-    payload = json.load(sys.stdin)
+    payload = json.loads(sys.stdin.buffer.read().decode("utf-8"))
 
     # block した結果の再停止で無限に continue し続けないようにする
     if payload.get("stop_hook_active"):
@@ -181,7 +186,8 @@ def main() -> int:
     if "continue" not in verdict or "stop" in verdict:
         return 0
 
-    json.dump({"decision": "block", "reason": CONTINUE_REASON}, sys.stdout, ensure_ascii=False)
+    output = json.dumps({"decision": "block", "reason": CONTINUE_REASON}, ensure_ascii=False)
+    sys.stdout.buffer.write(output.encode("utf-8"))
     return 0
 
 
