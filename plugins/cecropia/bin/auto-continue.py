@@ -60,12 +60,17 @@ _ASYNC_LAUNCHED = "async_launched"
 
 
 def iter_records(transcript: Path) -> Iterator[dict]:
-    """transcript (JSONL) のレコードを記録順に返す。"""
-    with transcript.open(encoding="utf-8") as fp:
+    """transcript (JSONL) のレコードを記録順に返す。JSON として解釈できない行は読み飛ばす。"""
+    with transcript.open(encoding="utf-8", errors="replace") as fp:
         for line in fp:
             line = line.strip()
-            if line:
-                yield json.loads(line)
+            if not line:
+                continue
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            yield record
 
 
 def notified_tool_use_id(text: str) -> str:

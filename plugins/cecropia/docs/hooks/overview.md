@@ -126,6 +126,8 @@ task-notification は `user` メッセージの本文文字列、または attac
 
 停止した subagent は `SendMessage` によって再開されるため、起動・再開・完了は時系列の状態遷移として処理する。
 
+transcript のうち JSON として解釈できない行（NUL バイトのみの行、途中で途切れた行など）は読み飛ばす。
+
 ### 判定の委譲
 
 判定は `claude -p --safe-mode --model haiku --max-turns 1` を別プロセスとして起動して行う。`--safe-mode` は子プロセス側のプラグインとフックを無効化するため、このフック自身が再帰的に起動することはない。
