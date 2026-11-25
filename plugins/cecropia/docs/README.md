@@ -34,12 +34,13 @@ claude plugin install cecropia@claude-forest
 
 ## 環境変数
 
-| 環境変数 | 対象 agent | 説明 |
+| 環境変数 | 適用先 | 説明 |
 |---------|-----------|------|
 | `CLAUDE_ASK_DEFAULT_MODEL` | `claude-ask` | 使用するモデル。`<model>` または `<model>,<effort>` 形式（区切りはカンマ）。未設定または空文字列の場合は既定モデルを使用する |
 | `CLAUDE_REVIEW_DEFAULT_MODEL` | `claude-review` | 同上 |
 | `CLAUDE_TASK_DEFAULT_MODEL` | `claude-task` | 同上 |
 | `CLAUDEFOREST_DISABLE_DEVELOPMENT_GUIDELINES` | `claude-task` / SessionStart フック | 空文字以外を設定すると開発ガイドラインの参照指示を付加せず、セッションへの注入も行わない |
+| `CLAUDEFOREST_DISABLE_AUTO_CONTINUE` | Stop フック | 空文字以外を設定すると停止の判定を行わず、停止をブロックしない |
 
 ※ 各 agent の呼び出し時に `model=` / `effort=` を指定した場合はそちらが優先される（ユーザーが明示的に指定した場合のみ使用される）
 
