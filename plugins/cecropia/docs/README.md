@@ -2,7 +2,7 @@
 
 よく使う機能をまとめた Claude Code の基本プラグイン。
 
-別セッションの Claude との 1問1答・コードレビュー・ファイル書き込みを含む作業、GitHub PR の作成・取得、PlantUML 変換、セッションエクスポートなど、日常的に使うユーティリティを agent と skill として提供する。
+別セッションの Claude との 1問1答・コードレビュー・ファイル書き込みを含む作業、GitHub PR の作成・取得、PlantUML 変換、セッションエクスポートなど、日常的に使うユーティリティを agent と skill として提供する。あわせて、Bash 実行環境の整備やエージェントの停止判定などをフックとして提供する。
 
 ## 動作環境
 
@@ -60,3 +60,16 @@ claude plugin install cecropia@claude-forest
 | スキル名 | 説明 |
 |---------|------|
 | `create-pr` | 現在のブランチから GitHub PR を作成する。テンプレート指定に対応 |
+
+## フック一覧
+
+| フック | 説明 |
+|---------|------|
+| `SessionStart` | `CLAUDE_SESSION_ID` を環境変数として後続プロセスに継承させる |
+| `SessionStart`（direnv） | `.envrc` を direnv で評価し、得られた環境変数を後続の Bash 実行に継承させる |
+| `SessionStart`（development-guidelines） | 開発ガイドラインをセッションに注入する |
+| `SubagentStart` | `CLAUDE_PLUGIN_ROOT` / `CLAUDE_PLUGIN_DATA` を additionalContext 経由で subagent に伝える |
+| `PreToolUse` | ペアリング済みの場合、指定外のセッション ID での `claude-ask` / `claude-review` 呼び出しをブロックする |
+| `Stop` | エージェントが停止すべきでないときに停止しようとした場合、停止をブロックして処理を続行させる |
+
+詳細は [hooks](./hooks/overview.md) を参照。

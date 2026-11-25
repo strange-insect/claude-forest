@@ -2,7 +2,7 @@
 
 opencode CLI との連携機能を提供する Claude Code プラグイン。
 
-opencode との 1問1答・コードレビュー・ファイル書き込みを含む作業・セッションペアリング・セッションエクスポートを agent として提供する。
+opencode との 1問1答・コードレビュー・ファイル書き込みを含む作業・セッションペアリング・セッションエクスポートを agent として提供する。あわせて、agent の動作に必要なフックを提供する。
 
 ## 動作環境
 
@@ -47,3 +47,13 @@ claude plugin install treehopper@claude-forest
 | `opencode-task` | opencode CLI で opencode にファイル書き込みを含む作業を依頼する。実行中に軌道修正の指示を差し込める |
 | `opencode-pairing` | 現在の Claude セッションを opencode セッションに 1:1 でペアリングする |
 | `opencode-export-session` | opencode のセッション会話全文を Markdown ファイルにエクスポートする |
+
+## フック一覧
+
+| フック | 説明 |
+|---------|------|
+| `SessionStart` | `CLAUDE_SESSION_ID` を環境変数として後続プロセスに継承させる |
+| `SubagentStart` | `CLAUDE_PLUGIN_ROOT` / `CLAUDE_PLUGIN_DATA` を additionalContext 経由で subagent に伝える |
+| `PreToolUse` | ペアリング済みの場合、指定外のセッション ID での `opencode-ask` / `opencode-review` 呼び出しをブロックする |
+
+詳細は [hooks](./hooks/overview.md) を参照。

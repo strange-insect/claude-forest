@@ -11,7 +11,7 @@
 | `SessionStart`（development-guidelines） | セッション開始時 | 開発ガイドラインを `additionalContext` としてセッションに注入する |
 | `SubagentStart` | subagent 起動時 | `CLAUDE_PLUGIN_ROOT` / `CLAUDE_PLUGIN_DATA` を additionalContext 経由で subagent に伝える |
 | `PreToolUse` | Agent ツール呼び出し前 | ペアリング済みの場合、指定外のセッション ID での `claude-ask` / `claude-review` 呼び出しをブロックする |
-| `Stop` | エージェントの応答終了時 | 作業宣言・続行確認だけで停止した場合に、停止をブロックして処理を続行させる |
+| `Stop` | エージェントの応答終了時 | 停止すべきでないときに停止しようとした場合、停止をブロックして処理を続行させる |
 
 ## SessionStart
 
