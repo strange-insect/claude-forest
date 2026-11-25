@@ -164,7 +164,7 @@ def judge(message: str) -> str:
 
 
 def main() -> int:
-    payload = json.load(sys.stdin)
+    payload = json.loads(sys.stdin.buffer.read().decode("utf-8"))
 
     # block した結果の再停止で無限に continue し続けないようにする
     if payload.get("stop_hook_active"):
@@ -186,7 +186,8 @@ def main() -> int:
     if "continue" not in verdict or "stop" in verdict:
         return 0
 
-    json.dump({"decision": "block", "reason": CONTINUE_REASON}, sys.stdout, ensure_ascii=False)
+    output = json.dumps({"decision": "block", "reason": CONTINUE_REASON}, ensure_ascii=False)
+    sys.stdout.buffer.write(output.encode("utf-8"))
     return 0
 
 
